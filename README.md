@@ -13,20 +13,21 @@ Host your digital comics (CBZ/CBR files) on your home server and read them on an
 - 🌐 **Web reader** – Read in your browser without installing anything (on mobile too!)
 - ⚡ **Easy setup** – One command to get started
 
-## Server started 
-<img width="553" height="207" alt="image" src="https://github.com/user-attachments/assets/fd404a7e-01e3-4000-8ae9-fbd996b79ae9" />
-
 ## Collection view
-<img width="1157" height="999" alt="image" src="https://github.com/user-attachments/assets/167c9ca4-52dd-41a2-87d7-5b63ba35da15" />
+<img width="2314" height="1998" alt="image" src="https://github.com/user-attachments/assets/3e69bb33-28e4-4bcd-ad35-b2b29a4b1ff4" />
+
 
 ## Web and Mobile reader
-<img width="1054" height="993" alt="image" src="https://github.com/user-attachments/assets/17a2a55f-3191-4927-9ace-12b09a8f11cc" />
+<img width="2108" height="1986" alt="image" src="https://github.com/user-attachments/assets/c2079181-d3ee-4a91-b5a1-264177f0ada3" />
+
 
 ## Edit metadata (uses ComicInfo.xml if available)
-<img width="1060" height="990" alt="image" src="https://github.com/user-attachments/assets/1712caa9-bf4e-4c5f-a981-a334697c1edc" />
+<img width="2120" height="1980" alt="image" src="https://github.com/user-attachments/assets/971ca199-080c-40be-be9c-9c7b232ce6b0" />
+
 
 ## Continue reading and Last Added
-<img width="1108" height="860" alt="image" src="https://github.com/user-attachments/assets/0fabad5a-2153-4028-8300-d697266bb888" />
+<img width="2216" height="1720" alt="image" src="https://github.com/user-attachments/assets/6b989866-fca2-44e0-85c4-06513065d1a7" />
+
 
 
 ## Before You Start

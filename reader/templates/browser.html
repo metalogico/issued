@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="browser fade-in">
+  <h1
+    class="mb-4 bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-2xl font-bold text-transparent sm:mb-6 sm:text-3xl">
+    {{ title }}</h1>
+
+  {% if continue_reading_comics %}
+  <details class="group mb-8" open>
+    <summary class="mb-4 flex cursor-pointer items-center gap-3 list-none">
+      <svg class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90" xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+      <h2 class="text-lg font-bold text-gray-800">Continue Reading</h2>
+      <span id="continue-reading-count" class="rounded-full bg-violet-600 px-3 py-1 text-xs font-semibold text-white shadow-md animate-pulse">{{ continue_reading_comics|length }}</span>
+    </summary>
+    <div class="-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-0 sm:px-0 snap-x snap-mandatory scroll-smooth touch-pan-x">
+      <ul class="flex gap-4 py-2">
+        {% for c in continue_reading_comics %}
+        <li class="continue-reading-item group relative shrink-0 snap-start" data-comic-uuid="{{ c.uuid }}" id="continue-item-{{ c.uuid }}">
+          <div class="block w-[110px] sm:w-[130px] relative">
+            <button type="button"
+              hx-post="/reader/api/comic/{{ c.uuid }}/progress/clear"
+              hx-target="#continue-item-{{ c.uuid }}"
+              hx-swap="outerHTML swap:0.3s"
+              class="continue-reading-remove absolute right-1 top-1 z-30 flex h-6 w-6 sm:h-6 sm:w-6 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-red-600"
+              title="Remove from Continue Reading" aria-label="Remove from Continue Reading">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+            
+            <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}"
+              class="block w-full overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white relative z-0">
+              <div class="relative">
+                {% if c.get('is_completed') %}
+                <span
+                  class="comic-completed-badge absolute left-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white shadow-md"
+                  title="Completed">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+                {% endif %}
+                <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
+                  class="aspect-[2/3] w-full object-cover" loading="lazy">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                {% if c.get('current_page') %}
+                <div class="absolute bottom-0 left-0 right-0 p-2">
+                  <div class="rounded-full bg-violet-600 px-2 py-1 text-center text-xs font-semibold text-white">
+                    Page {{ c.current_page }}
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+              <div class="bg-white p-2">
+                <span class="line-clamp-2 block text-center text-xs font-medium text-gray-800">{{ c.filename }}</span>
+                {% if c.get('page_count') and c.page_count > 0 %}
+                <span class="mt-1 block text-center text-[10px] text-gray-500">{{ c.page_count }} pages</span>
+                {% endif %}
+              </div>
+            </a>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </details>
+  {% endif %}
+
+  {% if show_last_added and last_added_comics %}
+  <details class="group mb-8">
+    <summary class="mb-4 flex cursor-pointer items-center justify-between list-none">
+      <div class="flex items-center gap-3">
+        <svg class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90" xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+        <h2 class="text-lg font-bold text-gray-800">Last Added</h2>
+      </div>
+      <a href="{{ request.url_for('browse_last_added') }}"
+        class="text-sm font-semibold text-violet-600 transition hover:text-violet-700"
+        onclick="event.stopPropagation()">See all →</a>
+    </summary>
+    <div class="-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-0 sm:px-0 snap-x snap-mandatory scroll-smooth touch-pan-x">
+      <ul class="flex gap-4 py-2">
+        {% for c in last_added_comics %}
+        <li class="group relative shrink-0 snap-start">
+          <div class="block w-[110px] sm:w-[130px] relative">
+            <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}"
+              class="block w-full overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white relative z-0">
+              <div class="relative">
+                {% if c.get('is_completed') %}
+                <span
+                  class="comic-completed-badge absolute left-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white shadow-md"
+                  title="Completed">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+                {% endif %}
+                <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
+                  class="aspect-[2/3] w-full object-cover" loading="lazy">
+              </div>
+              <div class="bg-white p-2">
+                <span class="line-clamp-2 block text-center text-xs font-medium text-gray-800">{{ c.filename }}</span>
+                {% if c.get('page_count') and c.page_count > 0 %}
+                <span class="mt-1 block text-center text-[10px] text-gray-500">{{ c.page_count }} pages</span>
+                {% endif %}
+              </div>
+            </a>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </details>
+  {% elif show_last_added %}
+  <details class="group mb-8">
+    <summary class="mb-4 flex cursor-pointer items-center justify-between list-none">
+      <div class="flex items-center gap-3">
+        <svg class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90" xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+        <h2 class="text-lg font-bold text-gray-800">Last Added</h2>
+      </div>
+      <a href="{{ request.url_for('browse_last_added') }}"
+        class="text-sm font-semibold text-violet-600 transition hover:text-violet-700"
+        onclick="event.stopPropagation()">See all →</a>
+    </summary>
+  </details>
+  {% endif %}
+
+  {% if folders %}
+  <section class="mb-8">
+    <h2 class="mb-4 text-lg font-bold text-gray-800">Folders</h2>
+    <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      {% for f in folders %}
+      <li class="flex">
+        <a href="{{ request.url_for('browse_folder', folder_id=f.id) }}"
+          class="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+          data-folder-id="{{ f.id }}">
+          <div class="folder-preview-mosaic relative aspect-[2/3] w-full overflow-hidden bg-gradient-to-br from-violet-50 to-purple-50">
+            <div class="folder-preview-placeholder absolute inset-0 flex items-center justify-center">
+              <svg class="h-12 w-12 text-violet-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path
+                  d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+              </svg>
+            </div>
+            <div class="folder-preview-images absolute inset-0 hidden grid grid-cols-2 grid-rows-2 gap-1 p-1">
+              <div class="folder-thumb folder-thumb-1 rounded"></div>
+              <div class="folder-thumb folder-thumb-2 rounded"></div>
+              <div class="folder-thumb folder-thumb-3 rounded"></div>
+              <div class="folder-thumb folder-thumb-4 rounded"></div>
+            </div>
+          </div>
+          <div class="flex min-h-11 flex-col items-center justify-center p-4">
+            <span class="line-clamp-2 text-center text-sm font-semibold text-gray-800 leading-snug">{{ f.name }}</span>
+            <span class="mt-1.5 shrink-0 text-center text-xs font-medium text-violet-600">{{ f.get('item_count', 0) }}
+              items</span>
+          </div>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if comics %}
+  <section class="mb-8">
+    <h2 class="mb-4 text-lg font-bold text-gray-800">Comics</h2>
+    <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      {% for c in comics %}
+      <li class="group relative">
+        <div class="comic-card overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white">
+            <!-- Cover area -->
+            <div class="comic-cover relative aspect-[2/3] w-full">
+              {% if c.get('is_completed') %}
+              <span
+                class="comic-completed-badge absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-violet-600 text-white shadow-md"
+                title="Completed">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              {% endif %}
+
+              <!-- Cover image links to reader -->
+              <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block h-full w-full">
+                <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
+                  class="h-full w-full object-cover" loading="lazy">
+              </a>
+
+              <!-- Edit button (top-right, above overlay) -->
+              <button type="button"
+                hx-get="/reader/api/comic/{{ c.uuid }}/metadata"
+                hx-target="#comic-info-form"
+                hx-swap="none"
+                class="comic-info-btn comic-cover-btn absolute right-2 top-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md backdrop-blur-sm transition opacity-0 hover:bg-white active:scale-95 touch-manipulation sm:h-8 sm:w-8"
+                data-comic-uuid="{{ c.uuid }}" title="Edit metadata">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+
+              <!-- "Read" label (centered, above overlay) -->
+              <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}"
+                class="comic-cover-btn absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity pointer-events-none">
+                <span class="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg pointer-events-auto">Read</span>
+              </a>
+            </div>
+
+            <!-- Title area (never changes on hover) -->
+            <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block bg-white p-3">
+              <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.filename }}</span>
+              {% if c.get('page_count') and c.page_count > 0 %}
+              <span class="mt-1 block text-center text-xs text-gray-500">{{ c.page_count }} pages</span>
+              {% endif %}
+            </a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if not folders and not comics %}
+  <div class="flex flex-col items-center justify-center py-16 text-center">
+    <svg class="mb-4 h-16 w-16 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+      stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+    <p class="text-lg font-medium text-gray-500">No comics or folders here</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Comic info modal -->
+<div id="comic-info-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-md p-3 sm:p-4"
+  aria-hidden="true">
+  <div
+    class="modal-dialog max-h-[90dvh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl"
+    role="dialog" aria-labelledby="comic-info-title">
+    <div
+      class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-gradient-to-r from-violet-50 to-purple-50 px-4 py-3 sm:px-6 sm:py-4">
+      <h2 id="comic-info-title" class="text-lg font-bold text-gray-900 sm:text-xl">Comic Info</h2>
+      <button type="button" id="comic-info-close"
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-2xl text-gray-400 transition touch-manipulation hover:bg-white hover:text-gray-600"
+        aria-label="Close">&times;</button>
+    </div>
+    <form id="comic-info-form" 
+      hx-patch="/reader/api/comic/{uuid}/metadata"
+      hx-swap="none"
+      class="overflow-y-auto p-4 sm:p-6" style="max-height: calc(90dvh - 4rem);">
+      <p class="mb-6 rounded-xl bg-violet-50 p-4 text-sm text-gray-700">
+        <span class="font-semibold text-violet-700">File:</span> <span id="comic-info-filename"
+          class="break-all"></span>
+      </p>
+
+      <!-- Section: Identification -->
+      <div class="mb-6">
+        <h3 class="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">Identification</h3>
+        <div class="space-y-4">
+          <div>
+            <label for="meta-title" class="mb-1.5 block text-sm font-semibold text-gray-700">Title</label>
+            <input type="text" id="meta-title" name="title"
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+          </div>
+          <div>
+            <label for="meta-series" class="mb-1.5 block text-sm font-semibold text-gray-700">Series</label>
+            <input type="text" id="meta-series" name="series"
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+          </div>
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div>
+              <label for="meta-issue-number" class="mb-1.5 block text-sm font-semibold text-gray-700">Issue #</label>
+              <input type="number" id="meta-issue-number" name="issue_number" step="1"
+                class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+            </div>
+            <div>
+              <label for="meta-year" class="mb-1.5 block text-sm font-semibold text-gray-700">Year</label>
+              <input type="number" id="meta-year" name="year" min="1900" max="2100" step="1" placeholder="2025"
+                class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+            </div>
+            <div>
+              <label for="meta-month" class="mb-1.5 block text-sm font-semibold text-gray-700">Month</label>
+              <input type="number" id="meta-month" name="month" min="1" max="12" step="1" placeholder="1-12"
+                class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Credits -->
+      <div class="mb-6">
+        <h3 class="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">Credits</h3>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="meta-writer" class="mb-1.5 block text-sm font-semibold text-gray-700">Writer</label>
+            <input type="text" id="meta-writer" name="writer"
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+          </div>
+          <div>
+            <label for="meta-penciller" class="mb-1.5 block text-sm font-semibold text-gray-700">Penciller</label>
+            <input type="text" id="meta-penciller" name="penciller"
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+          </div>
+          <div>
+            <label for="meta-artist" class="mb-1.5 block text-sm font-semibold text-gray-700">Artist</label>
+            <input type="text" id="meta-artist" name="artist"
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+          </div>
+          <div>
+            <label for="meta-publisher" class="mb-1.5 block text-sm font-semibold text-gray-700">Publisher</label>
+            <input type="text" id="meta-publisher" name="publisher"
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Details -->
+      <div class="mb-6">
+        <h3 class="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">Details</h3>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="meta-genre" class="mb-1.5 block text-sm font-semibold text-gray-700">Genre</label>
+            <input type="text" id="meta-genre" name="genre" placeholder="e.g. Superhero, Horror"
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+          </div>
+          <div>
+            <label for="meta-language-iso" class="mb-1.5 block text-sm font-semibold text-gray-700">Language</label>
+            <input type="text" id="meta-language-iso" name="language_iso" placeholder="en, it, es, fr..."
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+          </div>
+          <div class="sm:col-span-2">
+            <label for="meta-web" class="mb-1.5 block text-sm font-semibold text-gray-700">Web URL</label>
+            <input type="url" id="meta-web" name="web" placeholder="https://..."
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+          </div>
+          <div>
+            <label for="meta-score" class="mb-1.5 block text-sm font-semibold text-gray-700">Personal Score</label>
+            <input type="number" id="meta-score" name="score" min="0" max="10" step="1" placeholder="0-10"
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Description -->
+      <div class="mb-6">
+        <h3 class="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">Description</h3>
+        <div class="space-y-4">
+          <div>
+            <label for="meta-summary" class="mb-1.5 block text-sm font-semibold text-gray-700">Summary</label>
+            <textarea id="meta-summary" name="summary" rows="3" placeholder="Brief description of the comic..."
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200"></textarea>
+          </div>
+          <div>
+            <label for="meta-notes" class="mb-1.5 block text-sm font-semibold text-gray-700">Notes</label>
+            <textarea id="meta-notes" name="notes" rows="2" placeholder="Personal notes or metadata source..."
+              class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2.5 text-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div
+        class="sticky bottom-0 -mx-4 -mb-4 flex justify-end gap-3 border-t border-gray-100 bg-white px-4 py-4 sm:-mx-6 sm:-mb-6 sm:px-6">
+        <button type="button" id="comic-info-cancel"
+          class="rounded-xl border-2 border-gray-200 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-95">Cancel</button>
+        <button type="submit"
+          class="rounded-xl bg-violet-600 hover:bg-violet-700 px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition active:scale-95">Save
+          Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ request.url_for('reader_static', path='/js/folder-preview.js') }}"></script>
+<script src="{{ request.url_for('reader_static', path='/js/browser.js') }}"></script>
+{% endblock %}

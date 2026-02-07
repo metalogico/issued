@@ -1,0 +1,35 @@
+# Version control
+.git/
+.gitignore
+
+# IDE / editor
+.cursor/
+
+# Build & packaging
+build/
+dist/
+issued.spec
+BUILD.md
+
+# Tests
+tests/
+
+# Documentation (not needed at runtime)
+README.md
+project-architecture.mdc
+roadmap-1.0.md
+
+# Runtime artefacts that should never bake into the image
+config.ini
+library.db
+library.db-shm
+library.db-wal
+thumbnails/
+data/
+
+# Docker / Compose
+docker-compose.yml
+
+# OS noise
+.DS_Store
+Thumbs.db

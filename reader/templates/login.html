@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#7c3aed">
+  <title>Login — {{ title }}</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="icon" type="image/svg+xml" href="{{ request.url_for('reader_static', path='/img/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ request.url_for('reader_static', path='/css/style.css') }}">
+</head>
+
+<body
+  class="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 text-gray-900 antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] flex flex-col items-center justify-center px-4">
+  <div class="w-full max-w-sm">
+    <a href="{{ request.url_for('browse_root') }}"
+      class="font-mono block text-center no-underline touch-manipulation hover:opacity-80 transition-all mb-8" title="Library">
+      <pre
+        class="m-0 whitespace-pre text-[0.5rem] leading-tight sm:text-[0.6rem] bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"> __     ______     ______     __  __     ______     _____    
+/\ \   /\  ___\   /\  ___\   /\ \/\ \   /\  ___\   /\  __-.  
+\ \ \  \ \___  \  \ \___  \  \ \ \_\ \  \ \  __\   \ \ \/\ \ 
+ \ \_\  \/\_____\  \/\_____\  \ \_____\  \ \_____\  \ \____- 
+  \/_/   \/_____/   \/_____/   \/_____/   \/_____/   \/____/</pre>
+    </a>
+    <div class="rounded-2xl border border-violet-100 bg-white/90 p-6 shadow-lg backdrop-blur-sm">
+      <h1 class="mb-4 text-center text-lg font-semibold text-gray-800">Sign in to read</h1>
+      {% if error %}
+      <p class="mb-3 text-center text-sm text-red-600">{{ error }}</p>
+      {% endif %}
+      <form action="{{ request.url_for('reader_login_post') }}" method="post" class="flex flex-col gap-4">
+        <input type="hidden" name="next" value="{{ next or '' }}">
+        <div>
+          <label for="username" class="mb-1 block text-sm font-medium text-gray-700">Username</label>
+          <input type="text" id="username" name="username" required autocomplete="username"
+            class="w-full rounded-xl border-2 border-violet-200 px-4 py-3 text-base placeholder-gray-400 focus:border-violet-400 focus:outline-none focus:ring-0 touch-manipulation"
+            placeholder="Username">
+        </div>
+        <div>
+          <label for="password" class="mb-1 block text-sm font-medium text-gray-700">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password"
+            class="w-full rounded-xl border-2 border-violet-200 px-4 py-3 text-base placeholder-gray-400 focus:border-violet-400 focus:outline-none focus:ring-0 touch-manipulation"
+            placeholder="Password">
+        </div>
+        <button type="submit"
+          class="w-full rounded-xl bg-violet-600 hover:bg-violet-700 px-4 py-3 text-sm font-semibold text-white shadow-md transition touch-manipulation">Sign
+          in</button>
+      </form>
+    </div>
+  </div>
+</body>
+
+</html>

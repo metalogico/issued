@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual env
+.venv/
+venv/
+
+# SQLite DB
+library.db
+library.db-shm
+library.db-wal
+
+# Thumbnails
+thumbnails/
+
+# PyInstaller
+build/
+dist/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Configuration
+config.ini
+
+# Logs
+issued.log
+issued.log.*
+
+# Migration backup
+library.db.bak
+
+# Pytest
+.pytest_cache/
+
+# Docker persistent data
+data/

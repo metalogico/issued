@@ -1,0 +1,29 @@
+[library]
+path = /path/to/comics
+name = My Comic Library
+
+[server]
+host = 0.0.0.0
+port = 8181
+
+[thumbnails]
+width = 300
+height = 450
+quality = 85
+format = jpeg
+
+[scanner]
+supported_formats = cbz,cbr
+ignore_patterns = .DS_Store,Thumbs.db,@eaDir
+
+[monitoring]
+# Enable automatic file monitoring when server is running
+enabled = true
+# Debounce delay in seconds (avoid multiple events for same file)
+debounce_seconds = 2
+
+[reader]
+# Web reader login (leave empty to allow access without password)
+user =
+password =
+

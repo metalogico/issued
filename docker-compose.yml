@@ -1,0 +1,18 @@
+services:
+  issued:
+    image: ghcr.io/metalogico/issued:latest
+    restart: unless-stopped
+
+    ports:
+      - "8181:8181"
+
+    volumes:
+      # Comics library — mounted read-only from the host.
+      # Change the left side to the absolute path of your comics folder.
+      - /path/to/your/comics:/comics:ro
+
+      # Persistent data: config.ini, library.db, thumbnails/ all live here.
+      - issued_data:/app/data
+
+volumes:
+  issued_data:

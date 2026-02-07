@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#7c3aed">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>{% block title %}Comic Library{% endblock %}</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="icon" type="image/svg+xml" href="{{ request.url_for('reader_static', path='/img/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ request.url_for('reader_static', path='/css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+
+<body
+  class="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 text-gray-900 antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]">
+  <header class="border-b border-violet-100 bg-white/80 py-3 sm:py-4 backdrop-blur-md shadow-sm">
+    <div class="mx-auto max-w-6xl px-3 sm:px-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <a href="{{ request.url_for('browse_root') }}"
+          class="font-mono text-base font-bold tracking-tight no-underline sm:text-xl touch-manipulation hover:opacity-80 transition-all"
+          title="Library">
+          <pre
+            class="m-0 whitespace-pre text-[0.4rem] leading-tight sm:text-[0.5rem] bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"> __     ______     ______     __  __     ______     _____    
+/\ \   /\  ___\   /\  ___\   /\ \/\ \   /\  ___\   /\  __-.  
+\ \ \  \ \___  \  \ \___  \  \ \ \_\ \  \ \  __\   \ \ \/\ \ 
+ \ \_\  \/\_____\  \/\_____\  \ \_____\  \ \_____\  \ \____- 
+  \/_/   \/_____/   \/_____/   \/_____/   \/_____/   \/____/</pre>
+        </a>
+        <div class="flex shrink-0 items-center gap-2">
+          <form action="{{ request.url_for('browse_search') }}" method="get" class="flex gap-2 sm:min-w-[280px]">
+            <input type="search" name="q" value="{{ request.query_params.get('q', '') }}"
+              placeholder="Search your comics…"
+              class="w-full rounded-xl border-2 border-violet-200 bg-white px-4 py-3 text-base placeholder-gray-400 shadow-sm transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none touch-manipulation min-h-[44px] sm:py-2 sm:text-sm sm:min-h-0"
+              aria-label="Search" inputmode="search" autocomplete="off">
+            <button type="submit"
+              class="flex-shrink-0 rounded-xl bg-violet-600 hover:bg-violet-700 px-4 py-3 text-sm font-semibold text-white shadow-md transition touch-manipulation min-h-[44px] min-w-[44px] sm:py-2 sm:min-h-0">Search</button>
+          </form>
+          {% if reader_auth_enabled %}
+          <form action="{{ request.url_for('reader_logout') }}" method="post" class="inline">
+            <button type="submit"
+              class="rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 touch-manipulation cursor-pointer">Logout</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% if breadcrumbs %}
+      <nav class="mt-3 flex items-center gap-2 text-sm">
+        <a href="{{ request.url_for('browse_root') }}"
+          class="flex items-center gap-1 text-violet-600 hover:text-violet-700" aria-label="Home">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          <span class="font-medium">Home</span>
+        </a>
+        {% for crumb in breadcrumbs %}
+        <span class="text-gray-300">/</span>
+        {% if crumb.id %}
+        <a href="{{ request.url_for('browse_folder', folder_id=crumb.id) }}"
+          class="font-medium text-violet-600 hover:text-violet-700">{{ crumb.name }}</a>
+        {% else %}
+        <span class="font-medium text-gray-600">{{ crumb.name }}</span>
+        {% endif %}
+        {% endfor %}
+      </nav>
+      {% endif %}
+    </div>
+  </header>
+  <main class="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>

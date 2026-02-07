@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="reader fade-in flex min-h-[100dvh] flex-col sm:min-h-[calc(100vh-5rem)]" data-comic-uuid="{{ comic_uuid }}"
+  data-page-count="{{ page_count }}" data-initial-page="{{ initial_page }}" tabindex="0"
+  title="Tap left/right or use arrow keys to navigate">
+
+  <div class="reader-controls sticky top-0 z-10 mb-3 rounded-2xl bg-white/90 backdrop-blur-xl border border-white/30 px-3 py-3 shadow-lg transition-all duration-300 sm:mb-4 sm:px-6 sm:py-4">
+    <div class="flex items-center justify-between gap-2 sm:gap-4">
+      <div class="flex-1 min-w-0">
+        <h1 class="mb-0.5 truncate text-base font-bold text-gray-900 sm:mb-1 sm:text-lg">{{ comic_title }}</h1>
+        <div class="flex items-center gap-2 text-xs sm:gap-3 sm:text-sm">
+          <span class="font-medium text-gray-600">
+            Page <span id="reader-page-num" class="font-bold text-violet-600">{{ initial_page }}</span> of <span
+              id="reader-page-total">{{ page_count }}</span>
+          </span>
+          <div class="flex-1 max-w-xs">
+            <div class="progress-bar h-2 rounded-full overflow-hidden">
+              <div id="reader-progress"
+                class="h-full bg-gradient-to-r from-violet-500 to-purple-600 transition-all duration-300"
+                style="width: {{ (initial_page / page_count * 100)|round }}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button type="button" id="fullscreen-toggle"
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
+        title="Toggle fullscreen (F)" aria-label="Fullscreen">
+        <svg id="fullscreen-icon-enter" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+        </svg>
+        <svg id="fullscreen-icon-exit" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div
+    class="reader-image-wrap flex min-h-[50vh] flex-1 items-center justify-center overflow-hidden rounded-2xl bg-gray-900 p-2 shadow-2xl cursor-pointer touch-manipulation select-none sm:min-h-[500px] sm:rounded-3xl sm:p-4"
+    role="img" aria-label="Comic page – tap left for previous, right for next">
+    <div id="reader-spinner" class="reader-spinner" aria-label="Loading page"></div>
+    <img id="reader-image" src="{{ request.url_for('api_comic_page', comic_uuid=comic_uuid, page_num=initial_page) }}"
+      alt="Page {{ initial_page }}"
+      class="max-h-[75dvh] max-w-full rounded-lg shadow-2xl transition-opacity duration-300 select-none pointer-events-none sm:max-h-[80vh]"
+      draggable="false">
+  </div>
+
+  <nav class="reader-navigation mt-4 flex justify-center gap-3 sm:mt-6 sm:gap-4"
+    style="transition: transform 0.3s ease, opacity 0.3s ease;">
+    <button type="button" id="reader-prev"
+      class="reader-nav-btn group flex min-h-[48px] min-w-[48px] flex-1 max-w-[180px] items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 font-semibold text-gray-700 shadow-lg transition-all touch-manipulation hover:shadow-xl hover:-translate-y-0.5 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-lg sm:min-w-0 sm:max-w-none sm:px-6"
+      disabled aria-label="Previous page">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        class="transition-transform group-hover:-translate-x-1">
+        <path d="m15 18-6-6 6-6" />
+      </svg>
+      <span>Previous</span>
+    </button>
+    <button type="button" id="reader-next"
+      class="reader-nav-btn group flex min-h-[48px] min-w-[48px] flex-1 max-w-[180px] items-center justify-center gap-2 rounded-2xl bg-violet-600 hover:bg-violet-700 px-4 py-3 font-semibold text-white shadow-lg transition touch-manipulation active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-0 sm:max-w-none sm:px-6"
+      aria-label="Next page">
+      <span>Next</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        class="transition-transform group-hover:translate-x-1">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+    </button>
+  </nav>
+
+  <div class="reader-hints mt-4 text-center sm:mt-6" style="transition: opacity 0.3s ease;">
+    <p class="text-xs text-gray-500 sm:text-sm">
+      <kbd class="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-gray-700 shadow">←</kbd>
+      <span class="mx-2">and</span>
+      <kbd class="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-gray-700 shadow">→</kbd>
+      <span class="mx-2">to navigate</span>
+      <span class="mx-2">·</span>
+      <kbd class="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-gray-700 shadow">F</kbd>
+      <span class="mx-2">or</span>
+      <kbd class="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-gray-700 shadow">ESC</kbd>
+      <span class="ml-2">for fullscreen</span>
+    </p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ request.url_for('reader_static', path='/js/reader.js') }}"></script>
+{% endblock %}

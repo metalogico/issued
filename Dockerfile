@@ -43,7 +43,8 @@ RUN sed -i 's/main$/main non-free/' /etc/apt/sources.list.d/debian.sources \
 
 # Pull the complete venv from the builder — nothing else crosses the boundary.
 COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:${PATH}"
+ENV PATH="/opt/venv/bin:${PATH}" \
+    DATA_DIR="/app/data"
 
 # ---------------------------------------------------------------------------
 # Non-root user

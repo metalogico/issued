@@ -1,7 +1,48 @@
 /**
- * Issued web reader – browser: comic info modal, htmx events, toasts
+ * Issued web reader – browser: comic info modal, htmx events, toasts, view toggle
  */
 (() => {
+  // --- View toggle (grid / table) ---
+
+  const comicsSection = document.getElementById('comics-section');
+  const gridBtn = document.getElementById('view-grid-btn');
+  const tableBtn = document.getElementById('view-table-btn');
+
+  if (comicsSection && gridBtn && tableBtn) {
+    const isSearch = comicsSection.dataset.isSearch === 'true';
+    const STORAGE_KEY = 'comics-view';
+
+    const applyView = (view) => {
+      const gridLists = comicsSection.querySelectorAll('.comics-grid-list');
+      const tableLists = comicsSection.querySelectorAll('.comics-table-list');
+      if (view === 'table') {
+        gridLists.forEach(el => el.classList.add('hidden'));
+        tableLists.forEach(el => el.classList.remove('hidden'));
+        tableBtn.classList.add('bg-violet-100', 'text-violet-700');
+        gridBtn.classList.remove('bg-violet-100', 'text-violet-700');
+      } else {
+        tableLists.forEach(el => el.classList.add('hidden'));
+        gridLists.forEach(el => el.classList.remove('hidden'));
+        gridBtn.classList.add('bg-violet-100', 'text-violet-700');
+        tableBtn.classList.remove('bg-violet-100', 'text-violet-700');
+      }
+    };
+
+    const savedView = localStorage.getItem(STORAGE_KEY);
+    applyView(savedView || 'grid');
+
+    gridBtn.addEventListener('click', () => {
+      localStorage.setItem(STORAGE_KEY, 'grid');
+      applyView('grid');
+    });
+    tableBtn.addEventListener('click', () => {
+      localStorage.setItem(STORAGE_KEY, 'table');
+      applyView('table');
+    });
+  }
+
+  // --- Comic info modal ---
+
   const modal = document.getElementById('comic-info-modal');
   const form = document.getElementById('comic-info-form');
   const filenameEl = document.getElementById('comic-info-filename');
@@ -34,7 +75,7 @@
     filenameEl.textContent = data.filename || '';
     currentUuid = data.uuid || null;
     if (currentUuid) {
-      form.setAttribute('hx-patch', `/reader/api/comic/${currentUuid}/metadata`);
+      form.dataset.uuid = currentUuid;
     }
     META_FIELDS.forEach((name) => {
       const el = form.elements[name];
@@ -42,12 +83,12 @@
     });
   };
 
-  // --- htmx events ---
+  // --- htmx events (GET metadata load) ---
 
   document.body.addEventListener('htmx:afterRequest', (evt) => {
-    const { target, successful, xhr, verb, failed } = evt.detail;
+    const { target, successful, xhr } = evt.detail;
 
-    if (target.id === 'comic-info-form' && successful && xhr?.status === 200 && verb !== 'patch') {
+    if (target?.id === 'comic-info-form' && successful && xhr?.status === 200) {
       try {
         populateForm(JSON.parse(xhr.responseText));
         setModalOpen(true);
@@ -55,13 +96,31 @@
         toast('error', 'Could not load comic info', 'The comic may have been moved or deleted.');
       }
     }
+  });
 
-    if (target.id === 'comic-info-form' && successful && verb === 'patch') {
+  // --- Form submit → JSON PATCH ---
+
+  form.addEventListener('submit', async (evt) => {
+    evt.preventDefault();
+    const uuid = form.dataset.uuid;
+    if (!uuid) return;
+    const data = {};
+    META_FIELDS.forEach((name) => {
+      const el = form.elements[name];
+      if (!el) return;
+      const val = el.value.trim();
+      data[name] = val === '' ? null : val;
+    });
+    try {
+      const res = await fetch(`/reader/api/comic/${uuid}/metadata`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(res.status);
       setModalOpen(false);
       toast('success', 'Saved!', null, 2000);
-    }
-
-    if (failed && xhr) {
+    } catch {
       toast('error', 'An error occurred', 'Please try again.');
     }
   });

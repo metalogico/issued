@@ -1,5 +1,102 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
+
+{% macro comic_table(comics_list, request) %}
+<div class="comics-table-wrap overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-md">
+  <table class="w-full min-w-[640px] border-collapse text-sm">
+    <thead>
+      <tr
+        class="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+        <th class="w-14 py-2 pl-3 pr-2"></th>
+        <th class="py-2 pr-4">Title</th>
+        <th class="py-2 pr-4">Publisher</th>
+        <th class="py-2 pr-3 text-center">Year</th>
+        <th class="py-2 pr-4">Writer / Penciller</th>
+        <th class="py-2 pr-3 text-center">Pages</th>
+        <th class="py-2 pr-3 text-center">Score</th>
+        <th class="py-2 pr-3 text-center">Done</th>
+        <th class="py-2 pr-3 text-center">Last read</th>
+        <th class="w-8 py-2 pr-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for c in comics_list %}
+      <tr class="comic-table-row group transition-colors hover:bg-violet-50">
+        <td class="w-14 py-1 pl-3 pr-2">
+          <div class="comic-thumb-zoom-wrap relative overflow-hidden rounded-lg" style="width:44px">
+            <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block">
+              <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
+                class="comic-thumb-zoom aspect-[2/3] w-full object-cover" loading="lazy">
+            </a>
+          </div>
+        </td>
+        <td class="py-2 pr-4">
+          <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block">
+            <p class="font-semibold text-gray-900 leading-snug line-clamp-2">{{ c.get('title') or c.filename }}</p>
+            {% if c.get('title') and c.get('title') != c.filename %}
+            <p class="mt-0.5 text-xs text-gray-400 truncate">{{ c.filename }}</p>
+            {% endif %}
+          </a>
+        </td>
+        <td class="py-2 pr-4 text-gray-700">
+          {% if c.get('publisher') %}{{ c.publisher }}{% else %}<span class="text-gray-300">—</span>{% endif %}
+        </td>
+        <td class="py-2 pr-3 text-center text-gray-700">
+          {% if c.get('year') %}{{ c.year }}{% else %}<span class="text-gray-300">—</span>{% endif %}
+        </td>
+        <td class="py-2 pr-4">
+          {% if c.get('writer') %}
+          <span class="flex items-center gap-1 text-gray-700">
+            <i data-lucide="pen-line" class="h-3 w-3 shrink-0 text-gray-400"></i>{{ c.writer }}
+          </span>
+          {% endif %}
+          {% if c.get('penciller') %}
+          <span class="flex items-center gap-1 text-gray-500">
+            <i data-lucide="pencil" class="h-3 w-3 shrink-0 text-gray-400"></i>{{ c.penciller }}
+          </span>
+          {% endif %}
+          {% if not c.get('writer') and not c.get('penciller') %}
+          <span class="text-gray-300">—</span>
+          {% endif %}
+        </td>
+        <td class="py-2 pr-3 text-center text-gray-700">
+          {% if c.get('page_count') %}{{ c.page_count }}{% else %}<span class="text-gray-300">—</span>{% endif %}
+        </td>
+        <td class="py-2 pr-3 text-center">
+          {% if c.get('score') is not none and c.score != '' %}
+          <span class="inline-flex items-center gap-0.5 font-semibold text-amber-500">
+            <i data-lucide="star" class="h-3 w-3 fill-amber-400 text-amber-400"></i>{{ c.score }}
+          </span>
+          {% else %}
+          <span class="text-gray-300">—</span>
+          {% endif %}
+        </td>
+        <td class="py-2 pr-3 text-center">
+          {% if c.get('is_completed') %}
+          <i data-lucide="circle-check" class="mx-auto h-4 w-4 text-violet-600"></i>
+          {% else %}
+          <span class="text-gray-300">—</span>
+          {% endif %}
+        </td>
+        <td class="py-2 pr-3 text-center text-xs text-gray-500">
+          {% if c.get('last_read_at') %}{{ c.last_read_at[:10] }}{% else %}<span class="text-gray-300">—</span>{% endif
+          %}
+        </td>
+        <td class="py-2 pr-3 text-center">
+          <button type="button" hx-get="/reader/api/comic/{{ c.uuid }}/metadata" hx-target="#comic-info-form"
+            hx-swap="none"
+            class="comic-info-btn flex h-7 w-7 items-center justify-center rounded-full text-gray-300 transition hover:bg-violet-100 hover:text-violet-700 active:scale-95 touch-manipulation opacity-0 group-hover:opacity-100"
+            data-comic-uuid="{{ c.uuid }}" title="Edit metadata">
+            <i data-lucide="square-pen" class="h-[13px] w-[13px]"></i>
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
 {% block content %}
 <div class="browser fade-in">
   <h1
@@ -9,31 +106,25 @@
   {% if continue_reading_comics %}
   <details class="group mb-8" open>
     <summary class="mb-4 flex cursor-pointer items-center gap-3 list-none">
-      <svg class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90" xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="m9 18 6-6-6-6" />
-      </svg>
+      <i data-lucide="chevron-right" class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90"></i>
       <h2 class="text-lg font-bold text-gray-800">Continue Reading</h2>
-      <span id="continue-reading-count" class="rounded-full bg-violet-600 px-3 py-1 text-xs font-semibold text-white shadow-md animate-pulse">{{ continue_reading_comics|length }}</span>
+      <span id="continue-reading-count"
+        class="rounded-full bg-violet-600 px-3 py-1 text-xs font-semibold text-white shadow-md animate-pulse">{{
+        continue_reading_comics|length }}</span>
     </summary>
     <div class="-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-0 sm:px-0 snap-x snap-mandatory scroll-smooth touch-pan-x">
       <ul class="flex gap-4 py-2">
         {% for c in continue_reading_comics %}
-        <li class="continue-reading-item group relative shrink-0 snap-start" data-comic-uuid="{{ c.uuid }}" id="continue-item-{{ c.uuid }}">
+        <li class="continue-reading-item group relative shrink-0 snap-start" data-comic-uuid="{{ c.uuid }}"
+          id="continue-item-{{ c.uuid }}">
           <div class="block w-[110px] sm:w-[130px] relative">
-            <button type="button"
-              hx-post="/reader/api/comic/{{ c.uuid }}/progress/clear"
-              hx-target="#continue-item-{{ c.uuid }}"
-              hx-swap="outerHTML swap:0.3s"
+            <button type="button" hx-post="/reader/api/comic/{{ c.uuid }}/progress/clear"
+              hx-target="#continue-item-{{ c.uuid }}" hx-swap="outerHTML swap:0.3s"
               class="continue-reading-remove absolute right-1 top-1 z-30 flex h-6 w-6 sm:h-6 sm:w-6 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-red-600"
               title="Remove from Continue Reading" aria-label="Remove from Continue Reading">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
+              <i data-lucide="x" class="h-[14px] w-[14px]"></i>
             </button>
-            
+
             <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}"
               class="block w-full overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white relative z-0">
               <div class="relative">
@@ -41,10 +132,7 @@
                 <span
                   class="comic-completed-badge absolute left-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white shadow-md"
                   title="Completed">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <i data-lucide="check" class="h-[14px] w-[14px]"></i>
                 </span>
                 {% endif %}
                 <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
@@ -77,10 +165,7 @@
   <details class="group mb-8">
     <summary class="mb-4 flex cursor-pointer items-center justify-between list-none">
       <div class="flex items-center gap-3">
-        <svg class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90" xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="m9 18 6-6-6-6" />
-        </svg>
+        <i data-lucide="chevron-right" class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90"></i>
         <h2 class="text-lg font-bold text-gray-800">Last Added</h2>
       </div>
       <a href="{{ request.url_for('browse_last_added') }}"
@@ -99,10 +184,7 @@
                 <span
                   class="comic-completed-badge absolute left-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white shadow-md"
                   title="Completed">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <i data-lucide="check" class="h-[14px] w-[14px]"></i>
                 </span>
                 {% endif %}
                 <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
@@ -125,10 +207,7 @@
   <details class="group mb-8">
     <summary class="mb-4 flex cursor-pointer items-center justify-between list-none">
       <div class="flex items-center gap-3">
-        <svg class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90" xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="m9 18 6-6-6-6" />
-        </svg>
+        <i data-lucide="chevron-right" class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90"></i>
         <h2 class="text-lg font-bold text-gray-800">Last Added</h2>
       </div>
       <a href="{{ request.url_for('browse_last_added') }}"
@@ -147,13 +226,10 @@
         <a href="{{ request.url_for('browse_folder', folder_id=f.id) }}"
           class="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
           data-folder-id="{{ f.id }}">
-          <div class="folder-preview-mosaic relative aspect-[2/3] w-full overflow-hidden bg-gradient-to-br from-violet-50 to-purple-50">
+          <div
+            class="folder-preview-mosaic relative aspect-[2/3] w-full overflow-hidden bg-gradient-to-br from-violet-50 to-purple-50">
             <div class="folder-preview-placeholder absolute inset-0 flex items-center justify-center">
-              <svg class="h-12 w-12 text-violet-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2">
-                <path
-                  d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
-              </svg>
+              <i data-lucide="folder" class="h-12 w-12 text-violet-300"></i>
             </div>
             <div class="folder-preview-images absolute inset-0 hidden grid grid-cols-2 grid-rows-2 gap-1 p-1">
               <div class="folder-thumb folder-thumb-1 rounded"></div>
@@ -174,75 +250,134 @@
   </section>
   {% endif %}
 
-  {% if comics %}
-  <section class="mb-8">
-    <h2 class="mb-4 text-lg font-bold text-gray-800">Comics</h2>
-    <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-      {% for c in comics %}
-      <li class="group relative">
-        <div class="comic-card overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white">
-            <!-- Cover area -->
+  {% if comics or grouped_comics %}
+  <section class="mb-8" id="comics-section" data-is-search="{{ 'true' if is_search else 'false' }}">
+    <div class="mb-4 flex items-center justify-between">
+      <h2 class="text-lg font-bold text-gray-800">{% if is_search %}Results{% else %}Comics{% endif %}</h2>
+      <div class="flex items-center gap-1 rounded-xl border border-violet-100 bg-white p-1 shadow-sm">
+        <button type="button" id="view-grid-btn" title="Grid view"
+          class="view-toggle-btn flex h-8 w-8 items-center justify-center rounded-lg transition">
+          <i data-lucide="layout-grid" class="h-4 w-4"></i>
+        </button>
+        <button type="button" id="view-table-btn" title="Table view"
+          class="view-toggle-btn flex h-8 w-8 items-center justify-center rounded-lg transition">
+          <i data-lucide="list" class="h-4 w-4"></i>
+        </button>
+      </div>
+    </div>
+
+    {% if is_search and grouped_comics %}
+    {% for group in grouped_comics %}
+    <div class="comics-group mb-6">
+      <h3
+        class="comics-series-header mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-violet-700">
+        <i data-lucide="folder-open" class="h-[14px] w-[14px]"></i>
+        {{ group.series }}
+        <span class="ml-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-600">{{
+          group.comics|length }}</span>
+      </h3>
+      <!-- Grid view -->
+      <ul class="comics-grid-list grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        {% for c in group.comics %}
+        <li class="group relative">
+          <div
+            class="comic-card overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white">
             <div class="comic-cover relative aspect-[2/3] w-full">
               {% if c.get('is_completed') %}
               <span
                 class="comic-completed-badge absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-violet-600 text-white shadow-md"
                 title="Completed">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+                <i data-lucide="check" class="h-4 w-4"></i>
               </span>
               {% endif %}
-
-              <!-- Cover image links to reader -->
               <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block h-full w-full">
                 <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
                   class="h-full w-full object-cover" loading="lazy">
               </a>
-
-              <!-- Edit button (top-right, above overlay) -->
-              <button type="button"
-                hx-get="/reader/api/comic/{{ c.uuid }}/metadata"
-                hx-target="#comic-info-form"
+              <button type="button" hx-get="/reader/api/comic/{{ c.uuid }}/metadata" hx-target="#comic-info-form"
                 hx-swap="none"
-                class="comic-info-btn comic-cover-btn absolute right-2 top-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md backdrop-blur-sm transition opacity-0 hover:bg-white active:scale-95 touch-manipulation sm:h-8 sm:w-8"
+                class="comic-info-btn comic-cover-btn absolute right-2 top-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md backdrop-blur-sm transition opacity-0 hover:bg-white active:scale-95 touch-manipulation"
                 data-comic-uuid="{{ c.uuid }}" title="Edit metadata">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
+                <i data-lucide="square-pen" class="h-[14px] w-[14px]"></i>
               </button>
-
-              <!-- "Read" label (centered, above overlay) -->
               <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}"
                 class="comic-cover-btn absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity pointer-events-none">
-                <span class="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg pointer-events-auto">Read</span>
+                <span
+                  class="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg pointer-events-auto">Read</span>
               </a>
             </div>
-
-            <!-- Title area (never changes on hover) -->
             <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block bg-white p-3">
-              <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.filename }}</span>
+              <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.get('title') or
+                c.filename }}</span>
               {% if c.get('page_count') and c.page_count > 0 %}
               <span class="mt-1 block text-center text-xs text-gray-500">{{ c.page_count }} pages</span>
               {% endif %}
             </a>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      <!-- Table view -->
+      <div class="comics-table-list hidden">
+        {{ comic_table(group.comics, request) }}
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <!-- Grid view -->
+    <ul class="comics-grid-list grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      {% for c in comics %}
+      <li class="group relative">
+        <div
+          class="comic-card overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white">
+          <div class="comic-cover relative aspect-[2/3] w-full">
+            {% if c.get('is_completed') %}
+            <span
+              class="comic-completed-badge absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-violet-600 text-white shadow-md"
+              title="Completed">
+              <i data-lucide="check" class="h-4 w-4"></i>
+            </span>
+            {% endif %}
+            <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block h-full w-full">
+              <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
+                class="h-full w-full object-cover" loading="lazy">
+            </a>
+            <button type="button" hx-get="/reader/api/comic/{{ c.uuid }}/metadata" hx-target="#comic-info-form"
+              hx-swap="none"
+              class="comic-info-btn comic-cover-btn absolute right-2 top-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md backdrop-blur-sm transition opacity-0 hover:bg-white active:scale-95 touch-manipulation"
+              data-comic-uuid="{{ c.uuid }}" title="Edit metadata">
+              <i data-lucide="square-pen" class="h-[14px] w-[14px]"></i>
+            </button>
+            <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}"
+              class="comic-cover-btn absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity pointer-events-none">
+              <span
+                class="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg pointer-events-auto">Read</span>
+            </a>
+          </div>
+          <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block bg-white p-3">
+            <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.get('title') or
+              c.filename }}</span>
+            {% if c.get('page_count') and c.page_count > 0 %}
+            <span class="mt-1 block text-center text-xs text-gray-500">{{ c.page_count }} pages</span>
+            {% endif %}
+          </a>
         </div>
       </li>
       {% endfor %}
     </ul>
+    <!-- Table view -->
+    <div class="comics-table-list hidden">
+      {{ comic_table(comics, request) }}
+    </div>
+    {% endif %}
   </section>
   {% endif %}
 
-  {% if not folders and not comics %}
+  {% if not folders and not comics and not grouped_comics %}
   <div class="flex flex-col items-center justify-center py-16 text-center">
-    <svg class="mb-4 h-16 w-16 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-      stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-    <p class="text-lg font-medium text-gray-500">No comics or folders here</p>
+    <i data-lucide="file-x" class="mb-4 h-16 w-16 text-gray-300"></i>
+    <p class="text-lg font-medium text-gray-500">{% if is_search %}No results found{% else %}No comics or folders here{%
+      endif %}</p>
   </div>
   {% endif %}
 </div>
@@ -261,10 +396,7 @@
         class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-2xl text-gray-400 transition touch-manipulation hover:bg-white hover:text-gray-600"
         aria-label="Close">&times;</button>
     </div>
-    <form id="comic-info-form" 
-      hx-patch="/reader/api/comic/{uuid}/metadata"
-      hx-swap="none"
-      class="overflow-y-auto p-4 sm:p-6" style="max-height: calc(90dvh - 4rem);">
+    <form id="comic-info-form" class="overflow-y-auto p-4 sm:p-6" style="max-height: calc(90dvh - 4rem);">
       <p class="mb-6 rounded-xl bg-violet-50 p-4 text-sm text-gray-700">
         <span class="font-semibold text-violet-700">File:</span> <span id="comic-info-filename"
           class="break-all"></span>

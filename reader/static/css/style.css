@@ -208,6 +208,90 @@
   opacity: 1;
 }
 
+/* --- Table view: meta chips with Lucide icons --- */
+.comic-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  color: #6b7280;
+  position: relative;
+  white-space: nowrap;
+}
+
+.comic-meta-icon {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  color: #9ca3af;
+}
+
+/* CSS tooltip via data-tooltip attribute */
+.comic-meta-chip[data-tooltip]::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 50;
+}
+
+.comic-meta-chip[data-tooltip]::after {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 1px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #1f2937;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 50;
+}
+
+.comic-meta-chip[data-tooltip]:hover::before,
+.comic-meta-chip[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+/* --- Table view --- */
+.comics-table-wrap table {
+  table-layout: auto;
+}
+
+.comic-thumb-zoom-wrap {
+  overflow: hidden;
+}
+
+.comic-thumb-zoom {
+  transition: transform 0.3s ease;
+  transform-origin: left center;
+  display: block;
+}
+
+.comic-table-row:hover .comic-thumb-zoom {
+  transform: scale(1.6);
+}
+
+/* Touch: always show edit button in table rows */
+@media (hover: none) and (pointer: coarse) {
+  .comic-table-row .comic-info-btn {
+    opacity: 1 !important;
+  }
+}
+
 /* --- Folder preview (dynamic bg-image from JS) --- */
 .folder-thumb {
   background-size: cover;

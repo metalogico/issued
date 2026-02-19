@@ -181,7 +181,7 @@ def _comic_entry_xml(
     """Build OPDS entry XML for a comic. Adds rel=collection when folder is a series (leaf)."""
     links = [
         f'    <link rel="http://opds-spec.org/image/thumbnail"'
-        f'          href="{_absolute_href(base_url, _comic_thumb_href(comic_uuid))}" type="image/jpeg" />',
+        f'          href="{_absolute_href(base_url, _comic_thumb_href(comic_uuid))}" type="image/webp" />',
         f'    <link rel="http://opds-spec.org/acquisition"'
         f'          href="{_absolute_href(base_url, _comic_file_href(comic_uuid))}" type="{media_type}" />',
     ]
@@ -561,16 +561,16 @@ def download_comic(comic_uuid: str):
 
 @app.get("/opds/comic/{comic_uuid}/thumbnail")
 def get_thumbnail(comic_uuid: str):
-    """Return JPEG thumbnail for comic."""
+    """Return WebP thumbnail for comic."""
     try:
         config = get_config()
     except FileNotFoundError:
         raise HTTPException(status_code=500, detail="Server not configured")
 
-    thumb_path = config.thumbnails_dir / f"{comic_uuid}.jpg"
+    thumb_path = config.thumbnails_dir / f"{comic_uuid}.webp"
     if not thumb_path.exists():
         raise HTTPException(status_code=404, detail="Thumbnail not found")
-    return FileResponse(thumb_path, media_type="image/jpeg")
+    return FileResponse(thumb_path, media_type="image/webp")
 
 
 class _ReaderAccessFilter(logging.Filter):

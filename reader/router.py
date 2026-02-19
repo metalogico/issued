@@ -135,10 +135,12 @@ def browse_root(request: Request):
                 "browser.html",
                 {
                     "request": request,
-                    "title": f"{top_folders[0]['name']} — {_library_title()}",
+                    "title": _library_title(),
                     "breadcrumbs": [],
                     "folders": subfolders,
                     "comics": comics,
+                    "grouped_comics": [],
+                    "is_search": False,
                     "show_last_added": True,
                     "last_added_comics": last_added_comics,
                     "continue_reading_comics": continue_reading,
@@ -157,6 +159,8 @@ def browse_root(request: Request):
                 "breadcrumbs": [],
                 "folders": top_folders,
                 "comics": [],
+                "grouped_comics": [],
+                "is_search": False,
                 "show_last_added": True,
                 "last_added_comics": last_added_comics,
                 "continue_reading_comics": continue_reading,
@@ -172,7 +176,7 @@ def browse_root(request: Request):
 def browse_search(request: Request, q: str = ""):
     """Search comics by filename or metadata."""
     with db_connection() as conn:
-        comics = repo.search_comics(conn, q)
+        grouped_comics = repo.search_comics_grouped(conn, q)
 
     return templates.TemplateResponse(
         "browser.html",
@@ -181,7 +185,9 @@ def browse_search(request: Request, q: str = ""):
             "title": f"Search: {q} — {_library_title()}",
             "breadcrumbs": [],
             "folders": [],
-            "comics": comics,
+            "comics": [],
+            "grouped_comics": grouped_comics,
+            "is_search": True,
             "show_last_added": False,
             "last_added_comics": [],
             "continue_reading_comics": [],
@@ -208,6 +214,8 @@ def browse_last_added(request: Request, limit: int = 50):
             "breadcrumbs": [],
             "folders": [],
             "comics": comics,
+            "grouped_comics": [],
+            "is_search": False,
             "show_last_added": False,
             "last_added_comics": [],
             "continue_reading_comics": [],
@@ -239,6 +247,8 @@ def browse_folder(request: Request, folder_id: int):
             "breadcrumbs": breadcrumbs,
             "folders": subfolders,
             "comics": comics,
+            "grouped_comics": [],
+            "is_search": False,
             "show_last_added": False,
             "last_added_comics": [],
             "continue_reading_comics": [],

@@ -153,8 +153,14 @@ def get_folder_preview_thumbnails(conn, folder_id: int, limit: int = 3) -> list[
 # --- Comics (lists for browser) ---
 
 _COMICS_WITH_META = """
-    SELECT c.uuid, c.filename, c.page_count, (m.is_completed = 1) AS is_completed
-    FROM comics c LEFT JOIN metadata m ON m.comic_id = c.id
+    SELECT c.uuid, c.filename, c.page_count,
+           (m.is_completed = 1) AS is_completed,
+           m.title, m.publisher, m.year, m.artist, m.writer, m.penciller,
+           m.score, m.last_read_at,
+           f.name AS folder_name
+    FROM comics c
+    LEFT JOIN metadata m ON m.comic_id = c.id
+    LEFT JOIN folders f ON f.id = c.folder_id
 """
 
 
@@ -201,6 +207,26 @@ def search_comics(conn, q: str) -> list[dict]:
         (like, like, like),
     )
     return [dict(row) for row in cur.fetchall()]
+
+
+def search_comics_grouped(conn, q: str) -> list[dict]:
+    """Comics matching q grouped by parent folder (series), ordered by folder name then filename."""
+    if not q or not q.strip():
+        return []
+    like = f"%{q.strip()}%"
+    cur = conn.execute(
+        _COMICS_WITH_META
+        + " WHERE c.filename LIKE ? OR m.title LIKE ? OR m.series LIKE ?"
+        + " ORDER BY f.name, c.filename",
+        (like, like, like),
+    )
+    rows = [dict(row) for row in cur.fetchall()]
+    groups: dict[str, list] = {}
+    for row in rows:
+        key = row["folder_name"] or ""
+        groups.setdefault(key, [])
+        groups[key].append(row)
+    return [{"series": name, "comics": comics} for name, comics in groups.items()]
 
 
 # --- Comic by UUID (reader, APIs) ---

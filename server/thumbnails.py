@@ -1,7 +1,7 @@
 """Thumbnail generation for Issued.
 
-Generates JPEG thumbnails from the first page of CBZ/CBR archives,
-storing them under `thumbnails/{comic_uuid}.jpg`.
+Generates WebP thumbnails from the first page of CBZ/CBR archives,
+storing them under `thumbnails/{comic_uuid}.webp`.
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ def _save_thumbnail(
     with Image.open(BytesIO(img_bytes)) as im:
         im = im.convert("RGB")
         im.thumbnail((width, height))
-        im.save(thumb_path, format="JPEG", quality=quality, optimize=True)
+        im.save(thumb_path, format="WEBP", quality=quality)
 
 
 def generate_thumbnail_for_comic(
@@ -84,7 +84,7 @@ def generate_thumbnail_for_comic(
         if not img_bytes:
             return False
 
-        thumb_path = config.thumbnails_dir / f"{comic_uuid}.jpg"
+        thumb_path = config.thumbnails_dir / f"{comic_uuid}.webp"
         try:
             _save_thumbnail(
                 img_bytes,
@@ -120,7 +120,7 @@ def cleanup_orphaned_thumbnails(config: IssuedConfig) -> int:
             return 0
 
         deleted = 0
-        for thumb_file in thumbnails_dir.glob("*.jpg"):
+        for thumb_file in thumbnails_dir.glob("*.webp"):
             try:
                 comic_uuid = thumb_file.stem
                 if comic_uuid not in valid_uuids:
@@ -161,7 +161,7 @@ def generate_thumbnails(config: IssuedConfig, regenerate: bool = False) -> None:
             if not img_bytes:
                 continue
 
-            thumb_path = config.thumbnails_dir / f"{comic.uuid}.jpg"
+            thumb_path = config.thumbnails_dir / f"{comic.uuid}.webp"
             try:
                 _save_thumbnail(
                     img_bytes,

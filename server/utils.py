@@ -45,7 +45,7 @@ def delete_thumbnails(comic_uuids: list[str], thumbnails_dir: Path) -> int:
     """
     deleted = 0
     for comic_uuid in comic_uuids:
-        thumb_path = thumbnails_dir / f"{comic_uuid}.jpg"
+        thumb_path = thumbnails_dir / f"{comic_uuid}.webp"
         if thumb_path.exists():
             try:
                 thumb_path.unlink()

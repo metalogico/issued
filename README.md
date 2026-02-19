@@ -37,8 +37,8 @@ Host your digital comics (CBZ/CBR files) on your home server and read them on an
 **For CBR files only** (skip if you only have CBZ):
 
 Install `unrar` on your computer:
-- **macOS**: `brew install unrar`
-- **Linux**: `sudo apt install unrar`
+- **macOS**: `brew install rar`
+- **Linux**: `sudo apt install rar`
 - **Windows**: Download from [rarlab.com](https://www.rarlab.com/rar_add.htm)
 
 > **Note:** CBZ files work without any extra software. CBR files need `unrar` to extract.
@@ -59,11 +59,8 @@ services:
     ports:
       - "8181:8181"
     volumes:
+      - ./data:/app/data
       - /path/to/your/comics:/comics:ro   # ← Change this path
-      - issued_data:/app/data
-
-volumes:
-  issued_data:
 ```
 
 Change `/path/to/your/comics` to your comics folder:
@@ -177,10 +174,11 @@ This will:
 ### On Mobile Apps
 
 **Popular apps that work with Issued:**
-- **Panels** (iOS/Android) - Best overall experience
+- **Panels** (iOS) - Best overall experience
 - **Chunky Reader** (iOS) - Great for iPad
 - **KyBook** (iOS) - Feature-rich
 - **Moon+ Reader** (Android) - Highly customizable
+- And many oders with opds support (please let me know what you use and I'll add it here)
 
 **How to connect:**
 

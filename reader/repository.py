@@ -390,7 +390,61 @@ def clear_progress(conn, comic_uuid: str) -> None:
     if not cur.fetchone():
         return
     conn.execute(
-        "UPDATE metadata SET current_page = 0, last_read_at = NULL, is_completed = 0 WHERE comic_id = ?",
+        "UPDATE metadata SET current_page = NULL, last_read_at = NULL, is_completed = 0 WHERE comic_id = ?",
         (comic_id,),
     )
     conn.commit()
+
+
+def mark_all_comics_in_folder_completed(conn, folder_id: int) -> int:
+    """Mark all comics in a folder as completed. Returns number of comics updated."""
+    # Get all comic IDs in the folder
+    cur = conn.execute(
+        "SELECT id FROM comics WHERE folder_id = ?",
+        (folder_id,),
+    )
+    comic_ids = [row["id"] for row in cur.fetchall()]
+    
+    if not comic_ids:
+        return 0
+    
+    # Ensure metadata rows exist for all comics
+    for comic_id in comic_ids:
+        ensure_metadata_row(conn, comic_id)
+    
+    # Mark all as completed
+    now = datetime.now(timezone.utc).isoformat()
+    cur = conn.execute(
+        """UPDATE metadata 
+           SET is_completed = 1, last_read_at = ? 
+           WHERE comic_id IN ({})""".format(",".join("?" * len(comic_ids))),
+        [now] + comic_ids,
+    )
+    conn.commit()
+    
+    return cur.rowcount
+
+
+def toggle_comic_completed(conn, comic_uuid: str) -> bool | None:
+    """Toggle is_completed for a comic and return the new state, or None if comic not found."""
+    comic_id = get_comic_id_by_uuid(conn, comic_uuid)
+    if not comic_id:
+        return None
+
+    ensure_metadata_row(conn, comic_id)
+    cur = conn.execute(
+        "SELECT is_completed FROM metadata WHERE comic_id = ?",
+        (comic_id,),
+    )
+    row = cur.fetchone()
+    current_state = bool(row["is_completed"]) if row and row["is_completed"] is not None else False
+    new_state = not current_state
+
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        "UPDATE metadata SET is_completed = ?, last_read_at = ? WHERE comic_id = ?",
+        (1 if new_state else 0, now, comic_id),
+    )
+    conn.commit()
+
+    return new_state

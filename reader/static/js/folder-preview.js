@@ -17,6 +17,7 @@
       if (hasAny) {
         placeholder?.classList.add('hidden');
         container?.classList.remove('hidden');
+        container?.classList.add('grid');
       }
     };
 

@@ -145,6 +145,7 @@ def browse_root(request: Request):
                     "last_added_comics": last_added_comics,
                     "continue_reading_comics": continue_reading,
                     "reader_auth_enabled": _reader_auth_enabled(),
+                    "folder_id": folder_id,
                 },
             )
 
@@ -253,6 +254,7 @@ def browse_folder(request: Request, folder_id: int):
             "last_added_comics": [],
             "continue_reading_comics": [],
             "reader_auth_enabled": _reader_auth_enabled(),
+            "folder_id": folder_id,
         },
     )
 
@@ -396,6 +398,16 @@ def api_comic_progress_clear(comic_uuid: str):
         return Response(content="", status_code=200)
 
 
+@router.post("/api/comic/{comic_uuid}/completed/toggle")
+def api_comic_completed_toggle(comic_uuid: str):
+    """Toggle comic completed state."""
+    with db_connection() as conn:
+        if repo.get_comic_id_by_uuid(conn, comic_uuid) is None:
+            raise HTTPException(status_code=404, detail="Comic not found")
+        is_completed = repo.toggle_comic_completed(conn, comic_uuid)
+        return {"ok": True, "is_completed": bool(is_completed)}
+
+
 # --- API: folder preview thumbnails ---
 
 
@@ -408,3 +420,29 @@ def api_folder_preview(folder_id: int, limit: int = 3):
             raise HTTPException(status_code=404, detail="Folder not found")
         uuids = repo.get_folder_preview_thumbnails(conn, folder_id, min(limit, 5))
         return {"uuids": uuids}
+
+
+@router.post("/api/folder/{folder_id:int}/complete-all")
+def api_folder_complete_all(folder_id: int, request: Request):
+    """Mark all comics in a folder as completed."""
+    with db_connection() as conn:
+        folder = repo.get_folder(conn, folder_id)
+        if not folder:
+            raise HTTPException(status_code=404, detail="Folder not found")
+        
+        count = repo.mark_all_comics_in_folder_completed(conn, folder_id)
+        
+        # Fetch updated comics list
+        comics = repo.get_comics_in_folder(conn, folder_id)
+        
+        # Return the updated comics section
+        return templates.TemplateResponse(
+            "partials/comics-section.html",
+            {
+                "request": request,
+                "comics": comics,
+                "grouped_comics": [],
+                "is_search": False,
+                "folder_id": folder_id,
+            },
+        )

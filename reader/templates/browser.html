@@ -72,11 +72,13 @@
           {% endif %}
         </td>
         <td class="py-2 pr-3 text-center">
-          {% if c.get('is_completed') %}
-          <i data-lucide="circle-check" class="mx-auto h-4 w-4 text-violet-600"></i>
-          {% else %}
-          <span class="text-gray-300">—</span>
-          {% endif %}
+          <button type="button"
+            class="comic-completed-toggle comic-completed-toggle-table mx-auto inline-flex h-7 w-7 items-center justify-center rounded-full transition {% if c.get('is_completed') %}bg-violet-600 text-white{% else %}bg-gray-100 text-gray-400 hover:bg-violet-100 hover:text-violet-700{% endif %}"
+            data-comic-uuid="{{ c.uuid }}" data-is-completed="{{ 'true' if c.get('is_completed') else 'false' }}"
+            title="{% if c.get('is_completed') %}Mark as not completed{% else %}Mark as completed{% endif %}"
+            aria-label="{% if c.get('is_completed') %}Mark as not completed{% else %}Mark as completed{% endif %}">
+            <i data-lucide="check" class="h-4 w-4"></i>
+          </button>
         </td>
         <td class="py-2 pr-3 text-center text-xs text-gray-500">
           {% if c.get('last_read_at') %}{{ c.last_read_at[:10] }}{% else %}<span class="text-gray-300">—</span>{% endif
@@ -231,7 +233,7 @@
             <div class="folder-preview-placeholder absolute inset-0 flex items-center justify-center">
               <i data-lucide="folder" class="h-12 w-12 text-violet-300"></i>
             </div>
-            <div class="folder-preview-images absolute inset-0 hidden grid grid-cols-2 grid-rows-2 gap-1 p-1">
+            <div class="folder-preview-images absolute inset-0 hidden grid-cols-2 grid-rows-2 gap-1 p-1">
               <div class="folder-thumb folder-thumb-1 rounded"></div>
               <div class="folder-thumb folder-thumb-2 rounded"></div>
               <div class="folder-thumb folder-thumb-3 rounded"></div>
@@ -253,16 +255,31 @@
   {% if comics or grouped_comics %}
   <section class="mb-8" id="comics-section" data-is-search="{{ 'true' if is_search else 'false' }}">
     <div class="mb-4 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-gray-800">{% if is_search %}Results{% else %}Comics{% endif %}</h2>
-      <div class="flex items-center gap-1 rounded-xl border border-violet-100 bg-white p-1 shadow-sm">
-        <button type="button" id="view-grid-btn" title="Grid view"
-          class="view-toggle-btn flex h-8 w-8 items-center justify-center rounded-lg transition">
-          <i data-lucide="layout-grid" class="h-4 w-4"></i>
+      <h2 class="text-lg font-bold text-gray-800">
+        {% if is_search %}Results{% else %}Comics{% endif %}
+        {% if comics %}
+        <span class="ml-2 text-sm font-normal text-gray-500">({{ comics|length }})</span>
+        {% endif %}
+      </h2>
+      <div class="flex items-center gap-2">
+        {% if comics and not is_search and folder_id %}
+        <button type="button" hx-post="/reader/api/folder/{{ folder_id }}/complete-all" hx-target="#comics-section"
+          hx-swap="outerHTML"
+          class="complete-all-btn flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 transition hover:bg-violet-100 active:scale-95">
+          <i data-lucide="check-circle" class="h-4 w-4"></i>
+          Complete all
         </button>
-        <button type="button" id="view-table-btn" title="Table view"
-          class="view-toggle-btn flex h-8 w-8 items-center justify-center rounded-lg transition">
-          <i data-lucide="list" class="h-4 w-4"></i>
-        </button>
+        {% endif %}
+        <div class="flex items-center gap-1 rounded-xl border border-violet-100 bg-white p-1 shadow-sm">
+          <button type="button" id="view-grid-btn" title="Grid view"
+            class="view-toggle-btn flex h-8 w-8 items-center justify-center rounded-lg transition">
+            <i data-lucide="layout-grid" class="h-4 w-4"></i>
+          </button>
+          <button type="button" id="view-table-btn" title="Table view"
+            class="view-toggle-btn flex h-8 w-8 items-center justify-center rounded-lg transition">
+            <i data-lucide="list" class="h-4 w-4"></i>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -283,13 +300,13 @@
           <div
             class="comic-card overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white">
             <div class="comic-cover relative aspect-[2/3] w-full">
-              {% if c.get('is_completed') %}
-              <span
-                class="comic-completed-badge absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-violet-600 text-white shadow-md"
-                title="Completed">
+              <button type="button"
+                class="comic-completed-toggle comic-completed-toggle-grid absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full shadow-md transition {% if c.get('is_completed') %}bg-violet-600 text-white opacity-100{% else %}bg-gray-100 text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-violet-100 hover:text-violet-700{% endif %}"
+                data-comic-uuid="{{ c.uuid }}" data-is-completed="{{ 'true' if c.get('is_completed') else 'false' }}"
+                title="{% if c.get('is_completed') %}Mark as not completed{% else %}Mark as completed{% endif %}"
+                aria-label="{% if c.get('is_completed') %}Mark as not completed{% else %}Mark as completed{% endif %}">
                 <i data-lucide="check" class="h-4 w-4"></i>
-              </span>
-              {% endif %}
+              </button>
               <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block h-full w-full">
                 <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
                   class="h-full w-full object-cover" loading="lazy">
@@ -331,13 +348,13 @@
         <div
           class="comic-card overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white">
           <div class="comic-cover relative aspect-[2/3] w-full">
-            {% if c.get('is_completed') %}
-            <span
-              class="comic-completed-badge absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-violet-600 text-white shadow-md"
-              title="Completed">
+            <button type="button"
+              class="comic-completed-toggle comic-completed-toggle-grid absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full shadow-md transition {% if c.get('is_completed') %}bg-violet-600 text-white opacity-100{% else %}bg-gray-100 text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-violet-100 hover:text-violet-700{% endif %}"
+              data-comic-uuid="{{ c.uuid }}" data-is-completed="{{ 'true' if c.get('is_completed') else 'false' }}"
+              title="{% if c.get('is_completed') %}Mark as not completed{% else %}Mark as completed{% endif %}"
+              aria-label="{% if c.get('is_completed') %}Mark as not completed{% else %}Mark as completed{% endif %}">
               <i data-lucide="check" class="h-4 w-4"></i>
-            </span>
-            {% endif %}
+            </button>
             <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block h-full w-full">
               <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
                 class="h-full w-full object-cover" loading="lazy">

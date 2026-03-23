@@ -138,6 +138,100 @@
     }, 350);
   });
 
+  // --- Complete all comics ---
+
+  document.addEventListener('htmx:afterSwap', (evt) => {
+    const triggerEl = evt.detail?.requestConfig?.elt;
+    const swapTarget = evt.detail?.target;
+    if (!triggerEl?.classList?.contains('complete-all-btn')) return;
+    if (swapTarget?.id !== 'comics-section') return;
+
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+
+    toast('success', 'All comics marked as completed!', null, 3000);
+  });
+
+  const applyCompletedState = (btn, isCompleted) => {
+    btn.dataset.isCompleted = isCompleted ? 'true' : 'false';
+    btn.title = isCompleted ? 'Mark as not completed' : 'Mark as completed';
+    btn.setAttribute('aria-label', btn.title);
+
+    btn.innerHTML = '<i data-lucide="check" class="h-4 w-4"></i>';
+
+    if (btn.classList.contains('comic-completed-toggle-grid')) {
+      btn.className = `comic-completed-toggle comic-completed-toggle-grid absolute left-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full shadow-md transition ${isCompleted
+        ? 'bg-violet-600 text-white opacity-100'
+        : 'bg-gray-100 text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-violet-100 hover:text-violet-700'
+        }`;
+      return;
+    }
+
+    btn.className = `comic-completed-toggle comic-completed-toggle-table mx-auto inline-flex h-7 w-7 items-center justify-center rounded-full transition ${isCompleted
+      ? 'bg-violet-600 text-white'
+      : 'bg-gray-100 text-gray-400 hover:bg-violet-100 hover:text-violet-700'
+      }`;
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  };
+
+  document.addEventListener('click', async (evt) => {
+    const toggleBtn = evt.target.closest('.comic-completed-toggle');
+    if (!toggleBtn) return;
+
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    if (toggleBtn.dataset.loading === 'true') return;
+    const comicUuid = toggleBtn.dataset.comicUuid;
+    if (!comicUuid) return;
+
+    toggleBtn.dataset.loading = 'true';
+
+    try {
+      let isCompleted;
+      const res = await fetch(`/reader/api/comic/${comicUuid}/completed/toggle`, {
+        method: 'POST',
+      });
+
+      if (res.status === 404) {
+        const progressRes = await fetch(`/reader/api/comic/${comicUuid}/progress`);
+        if (!progressRes.ok) throw new Error(progressRes.status);
+        const progressPayload = await progressRes.json();
+        const nextCompleted = !Boolean(progressPayload?.is_completed);
+        const nextPage = Number(progressPayload?.current_page) || 1;
+
+        const patchRes = await fetch(`/reader/api/comic/${comicUuid}/progress`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ current_page: nextPage, is_completed: nextCompleted }),
+        });
+        if (!patchRes.ok) throw new Error(patchRes.status);
+        isCompleted = nextCompleted;
+      } else {
+        if (!res.ok) throw new Error(res.status);
+        const payload = await res.json();
+        isCompleted = Boolean(payload?.is_completed);
+      }
+
+      document.querySelectorAll('.comic-completed-toggle').forEach((btn) => {
+        if (btn.dataset.comicUuid === comicUuid) {
+          applyCompletedState(btn, isCompleted);
+        }
+      });
+
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    } catch {
+      toast('error', 'An error occurred', 'Please try again.');
+    } finally {
+      toggleBtn.dataset.loading = 'false';
+    }
+  });
+
   // --- Modal close ---
 
   const close = () => setModalOpen(false);

@@ -23,7 +23,7 @@ pygments==2.19.2
 pyinstaller==6.18.0
 pyinstaller-hooks-contrib==2026.0
 pytest==9.0.2
-python-multipart==0.0.22
+python-multipart==0.0.26
 rarfile==4.2
 rich==14.3.1
 setuptools==80.10.2

@@ -22,7 +22,7 @@ pydantic-core==2.41.5
 pygments==2.20.0
 pyinstaller==6.18.0
 pyinstaller-hooks-contrib==2026.0
-pytest==9.0.2
+pytest==9.0.3
 python-multipart==0.0.26
 rarfile==4.2
 rich==14.3.1

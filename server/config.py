@@ -55,6 +55,7 @@ class ThumbnailConfig:
 class ScannerConfig:
     supported_formats: tuple[str, ...] = ("cbz", "cbr")
     ignore_patterns: tuple[str, ...] = (".DS_Store", "Thumbs.db", "@eaDir")
+    unrar_tool: str = "unrar"
 
 
 @dataclasses.dataclass
@@ -157,6 +158,7 @@ def load_config(config_path: Optional[pathlib.Path] = None) -> IssuedConfig:
             ).split(",")
             if p.strip()
         ),
+        unrar_tool=parser.get("scanner", "unrar_tool", fallback="unrar"),
     )
 
     monitoring = MonitoringConfig(

@@ -32,7 +32,6 @@ def _extract_first_image_bytes(path: Path) -> bytes | None:
             if not images:
                 logger.error(f"No images found in archive {path.name}")
                 return None
-            
             return archive.read(images[0])
             
     except (FileNotFoundError, PermissionError) as exc:

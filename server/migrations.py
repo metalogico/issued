@@ -15,6 +15,9 @@ from alembic.config import Config as AlembicConfig
 from alembic.script import ScriptDirectory
 
 from .config import DATA_DIR, PROJECT_ROOT
+from .logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -36,6 +39,41 @@ def _alembic_cfg() -> AlembicConfig:
 # ---------------------------------------------------------------------------
 
 DB_PATH = DATA_DIR / "library.db"
+
+
+def ensure_ongoing_series_table() -> bool:
+    """Create ``ongoing_series`` if it is missing.
+
+    Returns True when the table was created.  Used when ``alembic_version``
+    is already at head (e.g. 0002) but the table was never applied or was
+    removed — ``upgrade`` would otherwise no-op.
+    """
+    if not DB_PATH.exists():
+        return False
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        cur = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='ongoing_series'"
+        )
+        if cur.fetchone() is not None:
+            return False
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.execute(
+            """
+            CREATE TABLE ongoing_series (
+                folder_id INTEGER NOT NULL PRIMARY KEY
+                    REFERENCES folders(id) ON DELETE CASCADE,
+                marked_at DATETIME NOT NULL
+            )
+            """
+        )
+        conn.commit()
+        logger.warning(
+            "Created missing ongoing_series table (schema repair; DB was already at head)."
+        )
+        return True
+    finally:
+        conn.close()
 
 
 def _backup_db() -> None:

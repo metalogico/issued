@@ -105,6 +105,20 @@
     class="mb-4 bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-2xl font-bold text-transparent sm:mb-6 sm:text-3xl">
     {{ title }}</h1>
 
+  {% if folder_id is defined and folder_id and is_leaf %}
+  <div class="mb-4 flex flex-wrap items-center gap-2">
+    <button type="button"
+      class="folder-ongoing-toggle inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold shadow-sm transition active:scale-[0.98] touch-manipulation {% if is_ongoing %}border-violet-600 bg-violet-600 text-white{% else %}border-violet-200 bg-white text-violet-700 hover:bg-violet-50{% endif %}"
+      data-folder-id="{{ folder_id }}" data-ongoing="{{ 'true' if is_ongoing else 'false' }}"
+      title="{% if is_ongoing %}Remove from Ongoing list{% else %}Show on Ongoing page{% endif %}">
+      <i data-lucide="bookmark" class="h-4 w-4"></i>
+      Ongoing
+    </button>
+    <span class="text-xs text-gray-500">Track this series on the <a href="{{ request.url_for('browse_ongoings') }}"
+        class="font-medium text-violet-600 hover:text-violet-800">Ongoing</a> page.</span>
+  </div>
+  {% endif %}
+
   {% if continue_reading_comics %}
   <details class="group mb-8" open>
     <summary class="mb-4 flex cursor-pointer items-center gap-3 list-none">

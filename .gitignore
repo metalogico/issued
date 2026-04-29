@@ -39,3 +39,9 @@ library.db.bak
 
 # Docker persistent data
 data/
+
+.cursor/
+.agents/
+.claude/
+.windsurf/
+skills-lock.json

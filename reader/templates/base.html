@@ -21,33 +21,44 @@
   class="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 text-gray-900 antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]">
   <header class="border-b border-violet-100 bg-white/80 py-3 sm:py-4 backdrop-blur-md shadow-sm">
     <div class="mx-auto max-w-6xl px-3 sm:px-4">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <a href="{{ request.url_for('browse_root') }}"
-          class="font-mono text-base font-bold tracking-tight no-underline sm:text-xl touch-manipulation hover:opacity-80 transition-all"
-          title="Library">
-          <pre
-            class="m-0 whitespace-pre text-[0.4rem] leading-tight sm:text-[0.5rem] bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"> __     ______     ______     __  __     ______     _____    
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+        <div class="flex shrink-0 justify-center lg:justify-start lg:w-[min(14rem,28%)]">
+          <a href="{{ request.url_for('browse_root') }}"
+            class="font-mono text-base font-bold tracking-tight no-underline sm:text-xl touch-manipulation hover:opacity-80 transition-all inline-block"
+            title="Library">
+            <pre
+              class="m-0 whitespace-pre text-[0.4rem] leading-tight sm:text-[0.5rem] bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"> __     ______     ______     __  __     ______     _____    
 /\ \   /\  ___\   /\  ___\   /\ \/\ \   /\  ___\   /\  __-.  
 \ \ \  \ \___  \  \ \___  \  \ \ \_\ \  \ \  __\   \ \ \/\ \ 
  \ \_\  \/\_____\  \/\_____\  \ \_____\  \ \_____\  \ \____- 
   \/_/   \/_____/   \/_____/   \/_____/   \/_____/   \/____/</pre>
-        </a>
-        <div class="flex shrink-0 items-center gap-2">
-          <form action="{{ request.url_for('browse_search') }}" method="get" class="flex gap-2 sm:min-w-[280px]">
+          </a>
+        </div>
+        <div class="min-w-0 flex-1 flex justify-center px-0 lg:px-2">
+          <form action="{{ request.url_for('browse_search') }}" method="get" role="search"
+            class="w-full max-w-md">
             <input type="search" name="q" value="{{ request.query_params.get('q', '') }}"
               placeholder="Search your comics…"
               class="w-full rounded-xl border-2 border-violet-200 bg-white px-4 py-3 text-base placeholder-gray-400 shadow-sm transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none touch-manipulation min-h-[44px] sm:py-2 sm:text-sm sm:min-h-0"
               aria-label="Search" inputmode="search" autocomplete="off">
-            <button type="submit"
-              class="flex-shrink-0 rounded-xl bg-violet-600 hover:bg-violet-700 px-4 py-3 text-sm font-semibold text-white shadow-md transition touch-manipulation min-h-[44px] min-w-[44px] sm:py-2 sm:min-h-0">Search</button>
           </form>
+        </div>
+        <nav
+          class="flex shrink-0 flex-wrap items-center justify-center gap-1 sm:gap-2 lg:justify-end lg:w-[min(20rem,32%)]"
+          aria-label="Main">
+          <a href="{{ request.url_for('browse_root') }}"
+            class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-violet-50 hover:text-violet-800 touch-manipulation">Home</a>
+          <a href="{{ request.url_for('browse_ongoings') }}"
+            class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-violet-50 hover:text-violet-800 touch-manipulation">Ongoing</a>
+          <a href="{{ request.url_for('browse_last_added') }}"
+            class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-violet-50 hover:text-violet-800 touch-manipulation">Recent</a>
           {% if reader_auth_enabled %}
           <form action="{{ request.url_for('reader_logout') }}" method="post" class="inline">
             <button type="submit"
               class="rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 touch-manipulation cursor-pointer">Logout</button>
           </form>
           {% endif %}
-        </div>
+        </nav>
       </div>
       {% if breadcrumbs %}
       <nav class="mt-3 flex items-center gap-2 text-sm">

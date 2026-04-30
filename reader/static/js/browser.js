@@ -41,6 +41,110 @@
     });
   }
 
+  // --- Ongoing series (folder bookmark) ---
+
+  const toastOngoing = (icon, title, text, timer = 3000) =>
+    Swal.fire({ icon, title, text, toast: true, position: 'top-end', showConfirmButton: false, timer, timerProgressBar: true });
+
+  const applyOngoingBtn = (btn, ongoing) => {
+    btn.dataset.ongoing = ongoing ? 'true' : 'false';
+    btn.title = ongoing ? 'Remove from Ongoing list' : 'Show on Ongoing page';
+    btn.className =
+      'folder-ongoing-toggle inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold shadow-sm transition active:scale-[0.98] touch-manipulation '
+      + (ongoing
+        ? 'border-violet-600 bg-violet-600 text-white'
+        : 'border-violet-200 bg-white text-violet-700 hover:bg-violet-50');
+    btn.innerHTML = '<i data-lucide="bookmark" class="h-4 w-4"></i>\n      Ongoing';
+    if (window.lucide) window.lucide.createIcons();
+  };
+
+  document.addEventListener('click', async (evt) => {
+    const btn = evt.target.closest('.folder-ongoing-toggle');
+    if (!btn) return;
+    evt.preventDefault();
+    if (btn.dataset.loading === 'true') return;
+    const folderId = btn.dataset.folderId;
+    if (!folderId) return;
+    const next = btn.dataset.ongoing !== 'true';
+    btn.dataset.loading = 'true';
+    try {
+      const res = await fetch(`/reader/api/folder/${folderId}/ongoing`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ongoing: next }),
+      });
+      if (!res.ok) {
+        let msg = 'Could not update';
+        try {
+          const j = await res.json();
+          if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail);
+        } catch { /* ignore */ }
+        toastOngoing('error', msg, null, 4000);
+        return;
+      }
+      const payload = await res.json();
+      const ongoing = Boolean(payload?.ongoing);
+      document.querySelectorAll('.folder-ongoing-toggle').forEach((b) => {
+        if (b.dataset.folderId === folderId) applyOngoingBtn(b, ongoing);
+      });
+      toastOngoing('success', ongoing ? 'Added to Ongoing' : 'Removed from Ongoing', null, 2000);
+    } catch {
+      toastOngoing('error', 'Network error', 'Please try again.');
+    } finally {
+      btn.dataset.loading = 'false';
+    }
+  });
+
+  // --- Manual library scan ---
+
+  const scanBtn = document.getElementById('scan-library-btn');
+  const scanToast = (icon, title, text, timer = 3000) =>
+    Swal.fire({ icon, title, text, toast: true, position: 'top-end', showConfirmButton: false, timer, timerProgressBar: true });
+
+  if (scanBtn) {
+    scanBtn.addEventListener('click', async () => {
+      if (scanBtn.dataset.loading === 'true') return;
+
+      scanBtn.dataset.loading = 'true';
+      scanBtn.disabled = true;
+      scanBtn.classList.add('animate-pulse');
+
+      try {
+        const res = await fetch('/reader/api/library/scan', { method: 'POST' });
+        if (!res.ok) {
+          let detail = 'Please try again.';
+          try {
+            const payload = await res.json();
+            if (payload?.detail && typeof payload.detail === 'string') {
+              detail = payload.detail;
+            }
+          } catch { /* ignore JSON parse errors */ }
+          throw new Error(detail);
+        }
+
+        const payload = await res.json();
+        const stats = payload?.stats || {};
+        scanToast(
+          'success',
+          'Scan completed',
+          `Added ${stats.added || 0}, updated ${stats.updated || 0}, deleted ${stats.deleted || 0}.`,
+          2200,
+        );
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Please try again.';
+        scanToast('error', 'Scan failed', message, 4500);
+      } finally {
+        scanBtn.dataset.loading = 'false';
+        scanBtn.disabled = false;
+        scanBtn.classList.remove('animate-pulse');
+      }
+    });
+  }
+
   // --- Comic info modal ---
 
   const modal = document.getElementById('comic-info-modal');

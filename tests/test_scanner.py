@@ -93,3 +93,39 @@ def test_scan_library_smoke(tmp_path, monkeypatch):
         conn.close()
 
 
+def test_scan_library_inserts_comics_in_natural_order(tmp_path, monkeypatch):
+    lib = tmp_path / "lib"
+    lib.mkdir()
+    series_dir = lib / "Series"
+    series_dir.mkdir()
+
+    # Create files in a non-natural order to verify scan ordering behavior.
+    for filename in ("issue10.cbz", "issue2.cbz", "issue1.cbz"):
+        _create_minimal_cbz(series_dir / filename)
+
+    db_file = tmp_path / "library.db"
+    monkeypatch.setattr("server.database.DB_PATH", db_file, raising=True)
+    from sqlmodel import create_engine
+
+    monkeypatch.setattr(
+        "server.database.engine",
+        create_engine(f"sqlite:///{db_file}", connect_args={"check_same_thread": False}),
+        raising=True,
+    )
+
+    config = _make_config(lib)
+    scanner.scan_library(config, path=None, force=True)
+
+    conn = sqlite3.connect(db_file)
+    try:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT filename FROM comics ORDER BY id").fetchall()
+        assert [row["filename"] for row in rows] == [
+            "issue1.cbz",
+            "issue2.cbz",
+            "issue10.cbz",
+        ]
+    finally:
+        conn.close()
+
+

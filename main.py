@@ -10,9 +10,15 @@ from typing import Optional
 import typer
 from sqlmodel import Session, select
 
+from server.archive import configure_rar_tool
 from server.config import DEFAULT_CONFIG_PATH, IssuedConfig, load_config
 from server.database import get_engine, init_db, reset_database
-from server.migrations import get_status, run_migrations, stamp_if_needed
+from server.migrations import (
+    ensure_ongoing_series_table,
+    get_status,
+    run_migrations,
+    stamp_if_needed,
+)
 from server.monitor import start_file_monitoring
 from server.opds import run_server
 from server.repository import Repository
@@ -38,10 +44,12 @@ STARTUP_BANNER = r"""
 
 def _ensure_config() -> IssuedConfig:
     try:
-        return load_config()
+        config = load_config()
     except FileNotFoundError:
         typer.echo("[ERROR] config.ini not found. Run: issued init --library /path/to/comics")
         raise typer.Exit(code=1)
+    configure_rar_tool(config.scanner.unrar_tool)
+    return config
 
 
 def _write_config(config_path: Path, library_path: Path, library_name: str) -> None:
@@ -64,6 +72,7 @@ def _write_config(config_path: Path, library_path: Path, library_name: str) -> N
     parser["scanner"] = {
         "supported_formats": "cbz,cbr",
         "ignore_patterns": ".DS_Store,Thumbs.db,@eaDir",
+        "unrar_tool": "unrar",
     }
     parser["monitoring"] = {
         "enabled": "true",
@@ -132,6 +141,9 @@ def serve(
         logger.info("Migration complete.")
     else:
         logger.info(f"Database at {head} (up to date).")
+
+    if ensure_ongoing_series_table():
+        logger.info("ongoing_series table was missing and has been repaired.")
 
     # Initial scan on startup (populates DB if empty or picks up changes)
     logger.info("Running initial library scan...")
@@ -223,6 +235,8 @@ def migrate(
 
     # Normal (non-check) path
     if current == head:
+        if ensure_ongoing_series_table():
+            logger.info("ongoing_series table was missing and has been repaired.")
         logger.info(f"Database already at {head} (head). Nothing to do.")
         raise typer.Exit(code=0)
 

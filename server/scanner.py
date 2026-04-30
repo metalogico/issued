@@ -11,6 +11,7 @@ Implements:
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Iterator, Optional, Tuple
@@ -28,6 +29,22 @@ logger = get_logger(__name__)
 
 
 COMIC_EXTENSIONS = {".cbz", ".cbr"}
+
+
+def _natural_sort_key(value: str) -> list[object]:
+    """Sort text in human-natural order (e.g. issue2 before issue10)."""
+    return [
+        int(part) if part.isdigit() else part.lower()
+        for part in re.split(r"(\d+)", value)
+    ]
+
+
+def _path_natural_sort_key(path: Path) -> list[object]:
+    """Sort paths naturally by each path segment."""
+    key: list[object] = []
+    for part in path.parts:
+        key.extend(_natural_sort_key(part))
+    return key
 
 
 def is_comic_file(path: Path) -> bool:
@@ -56,10 +73,13 @@ def walk_library(
         dirnames[:] = [
             d for d in dirnames if not _should_ignore(d, ignore_patterns)
         ]
+        dirnames.sort(key=_natural_sort_key)
+
+        sorted_filenames = sorted(filenames, key=_natural_sort_key)
 
         comic_files = [
             dir_path / f
-            for f in filenames
+            for f in sorted_filenames
             if not _should_ignore(f, ignore_patterns)
             and is_comic_file(Path(f))
         ]
@@ -233,10 +253,13 @@ def scan_folder(
 
     comic_files = []
     for root, dirs, files in os.walk(path):
+        dirs.sort(key=_natural_sort_key)
+        files = sorted(files, key=_natural_sort_key)
         for file in files:
             file_path = Path(root) / file
             if is_comic_file(file_path) and not file_path.name.startswith("._"):
                 comic_files.append(file_path)
+    comic_files.sort(key=_path_natural_sort_key)
     
     if comic_files:
         rel_path = path.relative_to(config.library_path)

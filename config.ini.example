@@ -15,6 +15,7 @@ format = jpeg
 [scanner]
 supported_formats = cbz,cbr
 ignore_patterns = .DS_Store,Thumbs.db,@eaDir
+unrar_tool = unrar
 
 [monitoring]
 # Enable automatic file monitoring when server is running

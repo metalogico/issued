@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from server.config import get_config
 from server.database import db_connection
+from server.scanner import scan_library
 
 from . import auth as reader_auth
 from . import repository as repo
@@ -42,6 +43,17 @@ def _reader_auth_enabled() -> bool:
         return get_config().reader_auth.enabled
     except FileNotFoundError:
         return False
+
+
+def _folder_ongoing_context(conn, folder_id: int | None) -> dict:
+    """Leaf folder + ongoing flag for series browse UI."""
+    if folder_id is None:
+        return {"is_leaf": False, "is_ongoing": False}
+    if not repo.get_folder(conn, folder_id):
+        return {"is_leaf": False, "is_ongoing": False}
+    is_leaf = repo.folder_is_leaf(conn, folder_id)
+    is_ongoing = repo.is_ongoing_series(conn, folder_id) if is_leaf else False
+    return {"is_leaf": is_leaf, "is_ongoing": is_ongoing}
 
 
 # --- Login / Logout ---
@@ -131,6 +143,7 @@ def browse_root(request: Request):
             comics = repo.get_comics_in_folder(conn, folder_id)
             last_added_comics = repo.get_last_added_comics(conn, 24)
             continue_reading = repo.get_continue_reading_comics(conn, 12)
+            ongoing_ctx = _folder_ongoing_context(conn, folder_id)
             return templates.TemplateResponse(
                 "browser.html",
                 {
@@ -146,6 +159,7 @@ def browse_root(request: Request):
                     "continue_reading_comics": continue_reading,
                     "reader_auth_enabled": _reader_auth_enabled(),
                     "folder_id": folder_id,
+                    **ongoing_ctx,
                 },
             )
 
@@ -166,6 +180,9 @@ def browse_root(request: Request):
                 "last_added_comics": last_added_comics,
                 "continue_reading_comics": continue_reading,
                 "reader_auth_enabled": _reader_auth_enabled(),
+                "folder_id": None,
+                "is_leaf": False,
+                "is_ongoing": False,
             },
         )
 
@@ -193,6 +210,9 @@ def browse_search(request: Request, q: str = ""):
             "last_added_comics": [],
             "continue_reading_comics": [],
             "reader_auth_enabled": _reader_auth_enabled(),
+            "folder_id": None,
+            "is_leaf": False,
+            "is_ongoing": False,
         },
     )
 
@@ -221,6 +241,28 @@ def browse_last_added(request: Request, limit: int = 50):
             "last_added_comics": [],
             "continue_reading_comics": [],
             "reader_auth_enabled": _reader_auth_enabled(),
+            "folder_id": None,
+            "is_leaf": False,
+            "is_ongoing": False,
+        },
+    )
+
+
+# --- Browse: ongoing series ---
+
+
+@router.get("/ongoings")
+def browse_ongoings(request: Request):
+    """List series marked ongoing with counts, last issue, gap hints."""
+    with db_connection() as conn:
+        ongoing_rows = repo.list_ongoing_series_rows(conn)
+    return templates.TemplateResponse(
+        "ongoings.html",
+        {
+            "request": request,
+            "title": _library_title(),
+            "ongoing_rows": ongoing_rows,
+            "reader_auth_enabled": _reader_auth_enabled(),
         },
     )
 
@@ -239,6 +281,7 @@ def browse_folder(request: Request, folder_id: int):
         subfolders = repo.get_subfolders_with_item_count(conn, folder_id)
         comics = repo.get_comics_in_folder(conn, folder_id)
         breadcrumbs = repo.get_breadcrumbs_for_folder(conn, folder_id)
+        ongoing_ctx = _folder_ongoing_context(conn, folder_id)
 
     return templates.TemplateResponse(
         "browser.html",
@@ -255,6 +298,7 @@ def browse_folder(request: Request, folder_id: int):
             "continue_reading_comics": [],
             "reader_auth_enabled": _reader_auth_enabled(),
             "folder_id": folder_id,
+            **ongoing_ctx,
         },
     )
 
@@ -274,6 +318,8 @@ def reader_view(request: Request, comic_uuid: str):
         initial_page = repo.get_initial_page(conn, comic_uuid, page_count)
         folder_id = repo.get_folder_id_for_comic(conn, comic_uuid)
         breadcrumbs = repo.get_breadcrumbs_for_folder(conn, folder_id) if folder_id else []
+        metadata = repo.get_metadata(conn, comic_uuid)
+        issue_title = (metadata or {}).get("title")
 
     return templates.TemplateResponse(
         "reader.html",
@@ -282,7 +328,8 @@ def reader_view(request: Request, comic_uuid: str):
             "title": f"{comic['filename']} — {_library_title()}",
             "breadcrumbs": breadcrumbs,
             "comic_uuid": comic_uuid,
-            "comic_title": comic["filename"],
+            "comic_filename": comic["filename"],
+            "issue_title": issue_title,
             "page_count": page_count,
             "initial_page": initial_page,
             "reader_auth_enabled": _reader_auth_enabled(),
@@ -337,6 +384,10 @@ class MetadataUpdate(BaseModel):
     language_iso: str | None = None
     score: int | None = None
     genre: str | None = None
+
+
+class OngoingUpdate(BaseModel):
+    ongoing: bool
 
 
 @router.get("/api/comic/{comic_uuid}/metadata")
@@ -411,6 +462,23 @@ def api_comic_completed_toggle(comic_uuid: str):
 # --- API: folder preview thumbnails ---
 
 
+@router.patch("/api/folder/{folder_id:int}/ongoing")
+def api_folder_ongoing_patch(folder_id: int, body: OngoingUpdate):
+    """Mark or unmark a series folder as ongoing."""
+    with db_connection() as conn:
+        if not repo.get_folder(conn, folder_id):
+            raise HTTPException(status_code=404, detail="Folder not found")
+        if not repo.folder_is_leaf(conn, folder_id):
+            raise HTTPException(
+                status_code=400,
+                detail="Only series folders (no subfolders) can be marked ongoing",
+            )
+        if body.ongoing and repo.folder_comic_count(conn, folder_id) == 0:
+            raise HTTPException(status_code=400, detail="Folder has no comics")
+        repo.set_ongoing_series(conn, folder_id, body.ongoing)
+    return {"ok": True, "ongoing": body.ongoing}
+
+
 @router.get("/api/folder/{folder_id:int}/preview")
 def api_folder_preview(folder_id: int, limit: int = 3):
     """JSON: list of comic UUIDs for folder preview stack."""
@@ -446,3 +514,13 @@ def api_folder_complete_all(folder_id: int, request: Request):
                 "folder_id": folder_id,
             },
         )
+
+
+@router.post("/api/library/scan")
+def api_library_scan():
+    """Trigger a manual library scan and return scan stats."""
+    try:
+        stats = scan_library(get_config())
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Scan failed: {exc}") from exc
+    return {"ok": True, "stats": stats}

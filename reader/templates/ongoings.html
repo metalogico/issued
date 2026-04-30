@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Ongoing series — {{ title }}{% endblock %}
+{% block content %}
+<div class="ongoings fade-in">
+  <h1
+    class="mb-6 bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-2xl font-bold text-transparent sm:text-3xl">
+    Ongoing series</h1>
+
+  {% if not ongoing_rows %}
+  <p class="rounded-2xl border border-violet-100 bg-white/80 p-6 text-gray-600 shadow-sm">
+    No series marked yet. Open a <strong>series folder</strong> (a folder that contains comics directly) and toggle
+    <strong>Ongoing</strong> to track it here.
+  </p>
+  {% else %}
+  <div class="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-md">
+    <table class="w-full min-w-[720px] border-collapse text-sm">
+      <thead>
+        <tr class="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <th class="py-3 pl-4 pr-3">Series</th>
+          <th class="py-3 pr-3 text-center">Issues</th>
+          <th class="py-3 pr-3">Latest added</th>
+          <th class="py-3 pr-4 text-center">Gaps</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for row in ongoing_rows %}
+        <tr class="transition-colors hover:bg-violet-50/60">
+          <td class="py-3 pl-4 pr-3">
+            <a href="{{ request.url_for('browse_folder', folder_id=row.folder_id) }}"
+              class="font-semibold text-violet-700 hover:text-violet-900">{{ row.folder_name }}</a>
+          </td>
+          <td class="py-3 pr-3 text-center text-gray-800">{{ row.issue_count }}</td>
+          <td class="py-3 pr-3 text-gray-700">
+            {% if row.last_comic_uuid %}
+            <a href="{{ request.url_for('reader_view', comic_uuid=(row.last_issue_uuid or row.last_comic_uuid)) }}"
+              class="flex items-center gap-3 text-violet-600 hover:text-violet-800">
+              <img src="{{ request.url_for('get_thumbnail', comic_uuid=row.last_comic_uuid) }}" alt=""
+                class="h-12 w-8 shrink-0 rounded object-cover shadow-sm" loading="lazy">
+              <span>
+                {% set issue_num = row.get('last_added_issue_number') %}
+                {% if issue_num in (none, '') %}
+                {% set issue_num = row.get('last_issue_number') %}
+                {% endif %}
+                {% if issue_num not in (none, '') %}
+                issue #{{ issue_num }}
+                {% else %}
+                issue —
+                {% endif %}
+                {% if row.last_added_at %}<span class="block text-xs text-gray-500">added {{ row.last_added_at[:10] }}</span>{% endif %}
+              </span>
+            </a>
+            {% else %}
+            <span class="text-gray-400">—</span>
+            {% endif %}
+          </td>
+          <td class="py-3 pr-4 text-center">
+            {% if row.missing_issues %}
+            <span class="inline-flex items-center justify-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900"
+              title="Missing issue numbers: {{ row.missing_issues|join(', ') }}">
+              <i data-lucide="alert-circle" class="h-3.5 w-3.5 shrink-0"></i>
+              {{ row.missing_issues|length }} gap{% if row.missing_issues|length != 1 %}s{% endif %}
+            </span>
+            {% elif row.has_numbered_issues %}
+            <span class="inline-flex items-center justify-center text-emerald-600" title="Contiguous run">
+              <i data-lucide="check-circle" class="h-4 w-4"></i>
+            </span>
+            {% else %}
+            <span class="text-xs text-gray-400" title="No integer issue numbers in metadata">—</span>
+            {% endif %}
+            {% if row.has_null_issue_numbers %}
+            <span class="mt-1 block text-[10px] text-gray-400" title="Some files have no issue number">unnumbered</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

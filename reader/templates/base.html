@@ -58,6 +58,10 @@
               class="rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 touch-manipulation cursor-pointer">Logout</button>
           </form>
           {% endif %}
+          <button type="button" id="scan-library-btn" title="Scan library" aria-label="Scan library"
+            class="ml-auto flex h-10 w-10 items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 touch-manipulation">
+            <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+          </button>
         </nav>
       </div>
       {% if breadcrumbs %}

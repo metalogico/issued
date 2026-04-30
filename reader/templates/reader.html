@@ -8,7 +8,10 @@
   <div class="reader-controls sticky top-0 z-10 mb-3 rounded-2xl bg-white/90 backdrop-blur-xl border border-white/30 px-3 py-3 shadow-lg transition-all duration-300 sm:mb-4 sm:px-6 sm:py-4">
     <div class="flex items-center justify-between gap-2 sm:gap-4">
       <div class="flex-1 min-w-0">
-        <h1 class="mb-0.5 truncate text-base font-bold text-gray-900 sm:mb-1 sm:text-lg">{{ comic_title }}</h1>
+        <h1 class="mb-0.5 truncate text-base font-bold text-gray-900 sm:mb-1 sm:text-lg">{{ comic_filename }}</h1>
+        {% if issue_title and issue_title != comic_filename %}
+        <p class="mb-0.5 truncate text-sm text-gray-500 sm:mb-1">{{ issue_title }}</p>
+        {% endif %}
         <div class="flex items-center gap-2 text-xs sm:gap-3 sm:text-sm">
           <span class="font-medium text-gray-600">
             Page <span id="reader-page-num" class="font-bold text-violet-600">{{ initial_page }}</span> of <span

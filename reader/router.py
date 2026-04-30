@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from server.config import get_config
 from server.database import db_connection
+from server.scanner import scan_library
 
 from . import auth as reader_auth
 from . import repository as repo
@@ -317,6 +318,8 @@ def reader_view(request: Request, comic_uuid: str):
         initial_page = repo.get_initial_page(conn, comic_uuid, page_count)
         folder_id = repo.get_folder_id_for_comic(conn, comic_uuid)
         breadcrumbs = repo.get_breadcrumbs_for_folder(conn, folder_id) if folder_id else []
+        metadata = repo.get_metadata(conn, comic_uuid)
+        issue_title = (metadata or {}).get("title")
 
     return templates.TemplateResponse(
         "reader.html",
@@ -325,7 +328,8 @@ def reader_view(request: Request, comic_uuid: str):
             "title": f"{comic['filename']} — {_library_title()}",
             "breadcrumbs": breadcrumbs,
             "comic_uuid": comic_uuid,
-            "comic_title": comic["filename"],
+            "comic_filename": comic["filename"],
+            "issue_title": issue_title,
             "page_count": page_count,
             "initial_page": initial_page,
             "reader_auth_enabled": _reader_auth_enabled(),
@@ -510,3 +514,13 @@ def api_folder_complete_all(folder_id: int, request: Request):
                 "folder_id": folder_id,
             },
         )
+
+
+@router.post("/api/library/scan")
+def api_library_scan():
+    """Trigger a manual library scan and return scan stats."""
+    try:
+        stats = scan_library(get_config())
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Scan failed: {exc}") from exc
+    return {"ok": True, "stats": stats}

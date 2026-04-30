@@ -32,10 +32,7 @@
         </td>
         <td class="py-2 pr-4">
           <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block">
-            <p class="font-semibold text-gray-900 leading-snug line-clamp-2">{{ c.get('title') or c.filename }}</p>
-            {% if c.get('title') and c.get('title') != c.filename %}
-            <p class="mt-0.5 text-xs text-gray-400 truncate">{{ c.filename }}</p>
-            {% endif %}
+            <p class="font-semibold text-gray-900 leading-snug line-clamp-2">{{ c.filename }}</p>
           </a>
         </td>
         <td class="py-2 pr-4 text-gray-700">
@@ -338,8 +335,7 @@
               </a>
             </div>
             <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block bg-white p-3">
-              <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.get('title') or
-                c.filename }}</span>
+              <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.filename }}</span>
               {% if c.get('page_count') and c.page_count > 0 %}
               <span class="mt-1 block text-center text-xs text-gray-500">{{ c.page_count }} pages</span>
               {% endif %}
@@ -386,8 +382,7 @@
             </a>
           </div>
           <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}" class="block bg-white p-3">
-            <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.get('title') or
-              c.filename }}</span>
+            <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.filename }}</span>
             {% if c.get('page_count') and c.page_count > 0 %}
             <span class="mt-1 block text-center text-xs text-gray-500">{{ c.page_count }} pages</span>
             {% endif %}

@@ -95,6 +95,56 @@
     }
   });
 
+  // --- Manual library scan ---
+
+  const scanBtn = document.getElementById('scan-library-btn');
+  const scanToast = (icon, title, text, timer = 3000) =>
+    Swal.fire({ icon, title, text, toast: true, position: 'top-end', showConfirmButton: false, timer, timerProgressBar: true });
+
+  if (scanBtn) {
+    scanBtn.addEventListener('click', async () => {
+      if (scanBtn.dataset.loading === 'true') return;
+
+      scanBtn.dataset.loading = 'true';
+      scanBtn.disabled = true;
+      scanBtn.classList.add('animate-pulse');
+
+      try {
+        const res = await fetch('/reader/api/library/scan', { method: 'POST' });
+        if (!res.ok) {
+          let detail = 'Please try again.';
+          try {
+            const payload = await res.json();
+            if (payload?.detail && typeof payload.detail === 'string') {
+              detail = payload.detail;
+            }
+          } catch { /* ignore JSON parse errors */ }
+          throw new Error(detail);
+        }
+
+        const payload = await res.json();
+        const stats = payload?.stats || {};
+        scanToast(
+          'success',
+          'Scan completed',
+          `Added ${stats.added || 0}, updated ${stats.updated || 0}, deleted ${stats.deleted || 0}.`,
+          2200,
+        );
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Please try again.';
+        scanToast('error', 'Scan failed', message, 4500);
+      } finally {
+        scanBtn.dataset.loading = 'false';
+        scanBtn.disabled = false;
+        scanBtn.classList.remove('animate-pulse');
+      }
+    });
+  }
+
   // --- Comic info modal ---
 
   const modal = document.getElementById('comic-info-modal');

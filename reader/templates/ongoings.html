@@ -32,15 +32,21 @@
           <td class="py-3 pr-3 text-center text-gray-800">{{ row.issue_count }}</td>
           <td class="py-3 pr-3 text-gray-700">
             {% if row.last_comic_uuid %}
-            <a href="{{ request.url_for('reader_view', comic_uuid=row.last_comic_uuid) }}"
-              class="text-violet-600 hover:text-violet-800">
-              {% if row.last_issue_number is not none %}#{{ row.last_issue_number }}{% else %}—{% endif %}
-              <span class="text-gray-500">
-                {% if row.last_cover_year %}
-                · {{ row.last_cover_year }}{% if row.last_cover_month %} / {{ row.last_cover_month }}{% endif %}
-                {% else %}
-                · —
+            <a href="{{ request.url_for('reader_view', comic_uuid=(row.last_issue_uuid or row.last_comic_uuid)) }}"
+              class="flex items-center gap-3 text-violet-600 hover:text-violet-800">
+              <img src="{{ request.url_for('get_thumbnail', comic_uuid=row.last_comic_uuid) }}" alt=""
+                class="h-12 w-8 shrink-0 rounded object-cover shadow-sm" loading="lazy">
+              <span>
+                {% set issue_num = row.get('last_added_issue_number') %}
+                {% if issue_num in (none, '') %}
+                {% set issue_num = row.get('last_issue_number') %}
                 {% endif %}
+                {% if issue_num not in (none, '') %}
+                issue #{{ issue_num }}
+                {% else %}
+                issue —
+                {% endif %}
+                {% if row.last_added_at %}<span class="block text-xs text-gray-500">added {{ row.last_added_at[:10] }}</span>{% endif %}
               </span>
             </a>
             {% else %}

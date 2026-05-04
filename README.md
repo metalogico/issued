@@ -19,6 +19,7 @@ This has been solved on the repo and I'm still investigating HOW they hacked the
 - 🖼️ **Thumbnail previews** – See cover images before opening
 - 📱 **Read anywhere** – Use your favorite comic reader app (Panels, Chunky, etc.)
 - 🌐 **Web reader** – Read in your browser without installing anything (on mobile too!)
+- 🔖 **Ongoing series** – Mark active series and quickly see new issues, totals, and possible gaps
 - ⚡ **Easy setup** – One command to get started
 
 ## Collection view
@@ -204,6 +205,23 @@ This will:
 
 Just open: `http://localhost:8181/reader/`
 
+From the web reader you can browse folders, search your library, read comics, edit comic details, and keep track of what you are reading.
+
+- Use **Recent** to see the comics you added most recently.
+- Use **Continue Reading** to jump back into comics you have started but not finished.
+- Mark comics as done from the grid or table view.
+- When you are inside a series folder, use **Mark all as completed** if you want to mark the whole series as done.
+
+### Ongoing series
+
+If you follow series that are still coming out, Issued can keep them together for you.
+
+1. Open the series folder in the web reader.
+2. Click the **Ongoing** button.
+3. Use **Ongoing** in the top menu to see all the series you are tracking.
+
+The Ongoing page shows the latest added issue, how many issues are in the series, and possible missing issue numbers. The button appears on series folders that contain comics directly.
+
 **Optional:** Add password protection by editing `config.ini`:
 ```ini
 [reader]
@@ -217,7 +235,9 @@ password = yourpassword
 
 Just copy them to your comics folder! If the server is running, they'll be detected automatically.
 
-Or manually scan:
+You can also start a scan from the web reader: click the refresh icon in the top menu. Issued will scan your library, show how many comics were added, updated, or deleted, and then refresh the page.
+
+Or manually scan from the command line:
 ```bash
 ./issued scan
 ```

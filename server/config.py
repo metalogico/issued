@@ -1,7 +1,8 @@
 """Config management for Issued.
 
 Reads `config.ini` from the project root (beside the executable / main.py).
-When running as PyInstaller onefile, PROJECT_ROOT is the directory containing the executable.
+When running as PyInstaller onefile, PROJECT_ROOT is the directory containing the executable,
+while RESOURCE_ROOT is the temporary bundle extraction directory.
 """
 
 from __future__ import annotations
@@ -23,7 +24,14 @@ def _get_project_root() -> pathlib.Path:
     return pathlib.Path(__file__).resolve().parents[1]
 
 
+def _get_resource_root() -> pathlib.Path:
+    if getattr(sys, "frozen", False):
+        return pathlib.Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    return _get_project_root()
+
+
 PROJECT_ROOT = _get_project_root()
+RESOURCE_ROOT = _get_resource_root()
 
 # DATA_DIR holds all persistent state (config.ini, library.db, thumbnails/).
 # Set via env var for Docker; defaults to PROJECT_ROOT for standalone use.
@@ -247,4 +255,3 @@ def ensure_config(
     thumbnails_dir.mkdir(parents=True, exist_ok=True)
 
     return path
-

@@ -14,7 +14,7 @@ from alembic import command as alembic_command
 from alembic.config import Config as AlembicConfig
 from alembic.script import ScriptDirectory
 
-from .config import DATA_DIR, PROJECT_ROOT
+from .config import DATA_DIR, RESOURCE_ROOT
 from .logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -26,11 +26,11 @@ logger = get_logger(__name__)
 
 def _alembic_cfg() -> AlembicConfig:
     """Build an AlembicConfig that points at our alembic.ini."""
-    ini_path = PROJECT_ROOT / "alembic.ini"
+    ini_path = RESOURCE_ROOT / "alembic.ini"
     cfg = AlembicConfig(str(ini_path))
     # Override script_location to an absolute path so it works regardless
     # of the current working directory.
-    cfg.set_main_option("script_location", str(PROJECT_ROOT / "migrations"))
+    cfg.set_main_option("script_location", str(RESOURCE_ROOT / "migrations"))
     return cfg
 
 

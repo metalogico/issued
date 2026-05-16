@@ -124,6 +124,11 @@ The image is also available on Docker Hub as `metalogico/issued`.
 
 **Best for:** Quick setup on your personal computer.
 
+> **Windows note:** Put the executable in a writable folder, such as your Desktop
+> or another folder inside your user profile. Avoid `C:\Program Files` unless you
+> run it with permissions to write there, because Issued stores `config.ini`,
+> `library.db`, logs, and thumbnails beside the executable by default.
+
 **Step 1:** Download for your system
 
 Get the latest release from [GitHub Releases](https://github.com/metalogico/issued/releases):
@@ -262,7 +267,9 @@ Or manually scan from the command line:
 
 ### Change settings
 
-Edit `config.ini` in the same folder as the executable:
+Edit `config.ini` in the app data folder. For standalone executables this is the
+same folder as the executable unless you set `DATA_DIR`; for Docker it is
+`/app/data` inside the container, usually backed by your mounted volume.
 - Change port: `[server]` → `port = 8080`
 - Add password: `[reader]` → `user = name`, `password = pass`
 - Adjust thumbnails: `[thumbnails]` → `width`, `height`, `quality`

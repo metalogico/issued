@@ -356,11 +356,16 @@ def opds_folder(folder_id: int, request: Request) -> Response:
 
     for comic in comics:
         updated_ts = comic["last_scanned_at"] or updated
-        media_type = (
-            "application/x-cbz"
-            if comic["format"].lower() == "cbz"
-            else "application/x-cbr"
-        )
+        # Determine media type based on format
+        fmt_lower = comic["format"].lower()
+        if fmt_lower == "cbz":
+            media_type = "application/x-cbz"
+        elif fmt_lower == "cbr":
+            media_type = "application/x-cbr"
+        elif fmt_lower == "pdf":
+            media_type = "application/pdf"
+        else:
+            media_type = "application/octet-stream"
         comic_uuid = comic["uuid"]
         title = comic["display_title"] or comic["filename"]
         entries.append(
@@ -418,15 +423,20 @@ def opds_recent(request: Request, limit: int = Query(50, ge=1, le=200)) -> Respo
     base_url = str(request.base_url)
     self_href = _absolute_href(base_url, _recent_href(limit))
     start_href = _absolute_href(base_url, _root_href())
-    
+
     entries = []
     for comic in comics:
         updated_ts = comic["last_scanned_at"] or updated
-        media_type = (
-            "application/x-cbz"
-            if comic["format"].lower() == "cbz"
-            else "application/x-cbr"
-        )
+        # Determine media type based on format
+        fmt_lower = comic["format"].lower()
+        if fmt_lower == "cbz":
+            media_type = "application/x-cbz"
+        elif fmt_lower == "cbr":
+            media_type = "application/x-cbr"
+        elif fmt_lower == "pdf":
+            media_type = "application/pdf"
+        else:
+            media_type = "application/octet-stream"
         comic_uuid = comic["uuid"]
         title = comic["display_title"] or comic["filename"]
         is_series = comic["folder_id"] not in non_leaf_ids
@@ -493,11 +503,16 @@ def opds_search(request: Request, q: str = Query(..., min_length=1)) -> Response
     entries = []
     for comic in comics:
         updated_ts = comic["last_scanned_at"] or updated
-        media_type = (
-            "application/x-cbz"
-            if comic["format"].lower() == "cbz"
-            else "application/x-cbr"
-        )
+        # Determine media type based on format
+        fmt_lower = comic["format"].lower()
+        if fmt_lower == "cbz":
+            media_type = "application/x-cbz"
+        elif fmt_lower == "cbr":
+            media_type = "application/x-cbr"
+        elif fmt_lower == "pdf":
+            media_type = "application/pdf"
+        else:
+            media_type = "application/octet-stream"
         comic_uuid = comic["uuid"]
         title = comic["display_title"] or comic["filename"]
         is_series = comic["folder_id"] not in non_leaf_ids
@@ -551,11 +566,16 @@ def download_comic(comic_uuid: str):
     if not path.exists():
         raise HTTPException(status_code=404, detail="File missing on disk")
 
-    media_type = (
-        "application/x-cbz"
-        if comic["format"].lower() == "cbz"
-        else "application/x-cbr"
-    )
+    # Determine media type
+    fmt_lower = comic["format"].lower()
+    if fmt_lower == "cbz":
+        media_type = "application/x-cbz"
+    elif fmt_lower == "cbr":
+        media_type = "application/x-cbr"
+    elif fmt_lower == "pdf":
+        media_type = "application/pdf"
+    else:
+        media_type = "application/octet-stream"
     return FileResponse(path, media_type=media_type, filename=path.name)
 
 

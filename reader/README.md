@@ -2,10 +2,12 @@
 
 Simple web UI for browsing and reading comics from the Issued library.
 
+Supports CBZ, CBR, and PDF formats with automatic page extraction and rendering.
+
 ## Structure
 
 - **`router.py`** – FastAPI router: browse (root, folder, recent), reader view, API for comic info and page images.
-- **`services.py`** – Logic: comic lookup by UUID, page image extraction from archives (uses `src`).
+- **`services.py`** – Logic: comic lookup by UUID, page image extraction from archives/PDFs (uses `server`).
 - **`templates/`** – Jinja2 HTML: `base.html`, `browser.html`, `reader.html`.
 - **`static/`** – CSS and JS: `css/style.css`, `js/reader.js`.
 

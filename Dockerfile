@@ -30,7 +30,7 @@ FROM python:3.12-slim AS runtime
 
 # OCI image metadata
 LABEL org.opencontainers.image.source="https://github.com/metalogico/issued"
-LABEL org.opencontainers.image.description="Personal comic library server — OPDS + web reader for CBZ/CBR"
+LABEL org.opencontainers.image.description="Personal comic library server — OPDS + web reader for CBZ/CBR/PDF"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Enable non-free component and install unrar (proprietary).

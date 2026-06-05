@@ -28,7 +28,7 @@ from sqlmodel import Session
 logger = get_logger(__name__)
 
 
-COMIC_EXTENSIONS = {".cbz", ".cbr"}
+COMIC_EXTENSIONS = {".cbz", ".cbr", ".pdf"}
 
 
 def _natural_sort_key(value: str) -> list[object]:

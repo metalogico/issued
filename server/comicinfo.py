@@ -1,6 +1,7 @@
 """ComicInfo.xml parsing for Issued.
 
-Reads ComicInfo.xml from inside CBZ/CBR archives and extracts metadata.
+Reads ComicInfo.xml from inside CBZ/CBR/PDF comic files and extracts metadata.
+For PDFs, ComicInfo.xml is generated from PDF metadata properties.
 The <Series> tag is never used; series is set from the folder name when the folder is a leaf.
 """
 
@@ -117,7 +118,10 @@ def parse_comicinfo_xml(xml_bytes: bytes) -> ComicInfoParsed:
 
 
 def read_comicinfo_from_archive(archive_path: Path) -> Optional[ComicInfoParsed]:
-    """Read ComicInfo.xml from a comic archive (CBZ/CBR) and return parsed model, or None."""
+    """Read ComicInfo.xml from a comic file (CBZ/CBR/PDF) and return parsed model, or None.
+
+    For PDF files, the ComicInfo.xml is generated from PDF metadata properties.
+    """
     try:
         with get_archive(archive_path) as archive:
             names = archive.list_names()

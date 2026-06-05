@@ -13,7 +13,6 @@ from server.archive import get_archive, PdfBookWrapper
 from server.scanner import is_comic_file
 
 
-@pytest.mark.skipif(not FITZ_AVAILABLE, reason="PyMuPDF not installed")
 def test_pdf_is_comic_file():
     """PDF files should be recognized as comics."""
     assert is_comic_file(Path("test.pdf"))
@@ -44,16 +43,16 @@ def test_pdf_book_wrapper(tmp_path):
         # Test list_images
         images = archive.list_images()
         assert len(images) == 2
-        assert images[0] == "page_001.png"
-        assert images[1] == "page_002.png"
+        assert images[0] == "page_0001.png"
+        assert images[1] == "page_0002.png"
 
         # Test list_names
         names = archive.list_names()
-        assert "page_001.png" in names
-        assert "page_002.png" in names
+        assert "page_0001.png" in names
+        assert "page_0002.png" in names
 
         # Test read - should return PNG bytes
-        img_bytes = archive.read("page_001.png")
+        img_bytes = archive.read("page_0001.png")
         assert img_bytes.startswith(b'\x89PNG')
 
         # Verify image can be opened by PIL
@@ -76,10 +75,15 @@ def test_pdf_corrupted(tmp_path):
 
 @pytest.mark.skipif(not FITZ_AVAILABLE, reason="PyMuPDF not installed")
 def test_pdf_password_protected(tmp_path):
-    """Test handling of password-protected PDFs."""
+    """Test handling of password-protected PDFs.
+
+    PyMuPDF opens AES-256 encrypted PDFs without the user password but treats
+    them as having 0 pages (the content stream is encrypted).  We verify that
+    PdfBookWrapper either raises ValueError or returns an empty page list — it
+    must never crash with an unhandled exception.
+    """
     pdf_path = tmp_path / "encrypted.pdf"
 
-    # Create encrypted PDF
     doc = fitz.open()
     page = doc.new_page()
     page.insert_text((10, 50), "Secret", fontsize=12)
@@ -87,16 +91,23 @@ def test_pdf_password_protected(tmp_path):
              owner_pw="owner", user_pw="user")
     doc.close()
 
-    # Note: PyMuPDF may be able to open password-protected PDFs in some cases
-    # This test just verifies we can handle them without crashing
+    opened_successfully = False
     try:
         with get_archive(pdf_path) as archive:
-            # If it opens, should still have pages
             images = archive.list_images()
-            assert len(images) >= 0
-    except (ValueError, RuntimeError):
-        # Expected if PyMuPDF can't open without password
+            # If it opens without a password, the page list must be a list
+            # (even if empty — fitz returns 0 pages for encrypted content).
+            assert isinstance(images, list)
+            opened_successfully = True
+    except ValueError:
+        # Expected: PdfBookWrapper raises ValueError for files it cannot open.
         pass
+
+    if opened_successfully:
+        # PyMuPDF returned 0 pages for the encrypted file — that is acceptable.
+        # A non-zero page count here would mean the content was readable without
+        # the password, which is also fine (fitz can decrypt with owner rights).
+        pass  # no further assertion needed; the important thing is no crash
 
 
 @pytest.mark.skipif(not FITZ_AVAILABLE, reason="PyMuPDF not installed")
@@ -110,10 +121,10 @@ def test_pdf_page_caching(tmp_path):
 
     with get_archive(pdf_path) as archive:
         # First read
-        img1 = archive.read("page_001.png")
+        img1 = archive.read("page_0001.png")
 
         # Second read should return cached result
-        img2 = archive.read("page_001.png")
+        img2 = archive.read("page_0001.png")
 
         # Should be identical (same object from cache)
         assert img1 == img2

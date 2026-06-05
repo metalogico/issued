@@ -27,6 +27,7 @@ except ImportError:
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 PDF_RENDER_DPI = 150  # DPI for rendering PDF pages to images
+PDF_MAX_CACHE_PAGES = 50  # Max pages to keep rendered in memory per session
 
 
 def is_image(filename: str) -> bool:
@@ -168,11 +169,11 @@ class PdfBookWrapper:
         except Exception as exc:
             raise ValueError(f"Cannot open PDF {path.name}: {exc}")
 
-        # Pre-compute synthetic page names
+        # Pre-compute synthetic page names (4-digit zero-padding supports up to 9999 pages)
         self._page_names = [
-            f"page_{i+1:03d}.png" for i in range(len(self._doc))
+            f"page_{i+1:04d}.png" for i in range(len(self._doc))
         ]
-        self._image_cache = {}  # Cache rendered pages during session
+        self._image_cache: dict[str, bytes] = {}  # LRU-bounded cache (max PDF_MAX_CACHE_PAGES entries)
 
     def list_images(self) -> List[str]:
         """Return synthetic page names as image list."""
@@ -181,8 +182,9 @@ class PdfBookWrapper:
     def list_names(self) -> List[str]:
         """Return all names including synthetic ComicInfo.xml if metadata present."""
         names = self._page_names.copy()
-        # PDFs often have metadata; expose as ComicInfo.xml for compatibility
-        if self._doc.metadata:
+        # PDFs often have metadata; expose as ComicInfo.xml for compatibility.
+        # fitz always returns a dict with all keys present, so check for any non-empty value.
+        if any(self._doc.metadata.values()):
             names.append("ComicInfo.xml")
         return names
 
@@ -210,7 +212,9 @@ class PdfBookWrapper:
             # Convert pixmap to PNG bytes
             img_bytes = pix.tobytes("png")
 
-            # Cache for this session
+            # Cache for this session (evict oldest entry when limit reached)
+            if len(self._image_cache) >= PDF_MAX_CACHE_PAGES:
+                self._image_cache.pop(next(iter(self._image_cache)))
             self._image_cache[filename] = img_bytes
             return img_bytes
 

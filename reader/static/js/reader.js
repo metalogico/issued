@@ -1,5 +1,5 @@
 /**
- * Issued web reader – page navigation, fullscreen, progress tracking
+ * Issued web reader – page navigation, fullscreen, progress tracking, spread view
  */
 (() => {
   const reader = document.querySelector('.reader');
@@ -8,6 +8,8 @@
   // --- DOM refs ---
   const $ = (sel) => document.querySelector(sel);
   const img = $('#reader-image');
+  const imgRight = $('#reader-image-right');
+  const pagesEl = $('#reader-pages');
   const spinner = $('#reader-spinner');
   const pageNumEl = $('#reader-page-num');
   const progressBar = $('#reader-progress');
@@ -17,6 +19,10 @@
   const fsIconEnter = $('#fullscreen-icon-enter');
   const fsIconExit = $('#fullscreen-icon-exit');
   const imageWrap = $('.reader-image-wrap');
+  const btnSpread = $('#btn-spread');
+  const iconSpreadOff = $('#icon-spread-off');
+  const iconSpreadOn = $('#icon-spread-on');
+  const btnCoverSep = $('#btn-cover-sep');
   const controlEls = ['.reader-controls', '.reader-navigation', '.reader-hints'].map($);
 
   const comicUuid = reader.dataset.comicUuid;
@@ -28,6 +34,8 @@
   let progressTimer = null;
   let hideTimer = null;
   let lastTouchEnd = 0;
+  let twoPageMode = false;
+  let coverSeparate = true;
 
   // --- Helpers ---
 
@@ -41,6 +49,45 @@
     reader.classList.toggle('cursor-hidden', !visible);
   };
 
+  // --- Spread helpers ---
+
+  const getRightPage = (page) => {
+    if (!twoPageMode) return null;
+    if (coverSeparate && page === 1) return null;
+    if (page >= pageCount) return null;
+    return page + 1;
+  };
+
+  const getNextPage = () => {
+    if (!twoPageMode) return currentPage + 1;
+    if (coverSeparate && currentPage === 1) return 2;
+    return currentPage + 2;
+  };
+
+  const getPrevPage = () => {
+    if (!twoPageMode) return currentPage - 1;
+    if (coverSeparate && currentPage === 2) return 1;
+    return currentPage - 2;
+  };
+
+  // Snap to nearest valid left-page for the current spread mode
+  const snapPage = (page) => {
+    if (!twoPageMode) return page;
+    if (coverSeparate) {
+      if (page === 1) return 1;
+      return page % 2 === 0 ? page : page - 1;
+    } else {
+      return page % 2 === 1 ? page : page - 1;
+    }
+  };
+
+  const updateBtnStates = () => {
+    iconSpreadOff.classList.toggle('hidden', twoPageMode);
+    iconSpreadOn.classList.toggle('hidden', !twoPageMode);
+    btnCoverSep.disabled = !twoPageMode;
+    btnCoverSep.classList.toggle('btn-view-active', twoPageMode && coverSeparate);
+  };
+
   // --- Page navigation ---
 
   const updatePage = (page) => {
@@ -50,42 +97,81 @@
 
     setSpinner(true);
     img.style.opacity = '0.5';
+    if (imgRight) imgRight.style.opacity = '0.5';
 
-    const url = pageUrl(page);
-    const preload = new Image();
+    const rightPage = getRightPage(page);
+    let leftLoaded = false;
+    let rightLoaded = !rightPage;
 
     const done = () => {
+      if (!leftLoaded || !rightLoaded) return;
       img.style.opacity = '1';
+      if (imgRight) imgRight.style.opacity = '1';
       setSpinner(false);
       loading = false;
+      if (pagesEl) pagesEl.classList.toggle('spread-mode', !!rightPage);
     };
 
-    preload.onload = () => { img.src = url; img.alt = `Page ${page}`; done(); };
-    preload.onerror = done;
-    preload.src = url;
+    // Load left page
+    const preloadL = new Image();
+    preloadL.onload = () => { img.src = pageUrl(page); img.alt = `Page ${page}`; leftLoaded = true; done(); };
+    preloadL.onerror = () => { leftLoaded = true; done(); };
+    preloadL.src = pageUrl(page);
+
+    // Load right page
+    if (rightPage && imgRight) {
+      imgRight.classList.remove('hidden');
+      const preloadR = new Image();
+      preloadR.onload = () => {
+        imgRight.src = pageUrl(rightPage);
+        imgRight.alt = `Page ${rightPage}`;
+        rightLoaded = true;
+        done();
+      };
+      preloadR.onerror = () => { rightLoaded = true; done(); };
+      preloadR.src = pageUrl(rightPage);
+    } else if (imgRight) {
+      imgRight.classList.add('hidden');
+      if (pagesEl) pagesEl.classList.remove('spread-mode');
+    }
 
     // Update UI
-    pageNumEl.textContent = page;
+    pageNumEl.textContent = rightPage ? `${page}–${rightPage}` : `${page}`;
     progressBar.style.width = `${(page / pageCount) * 100}%`;
-    prevBtn.disabled = page === 1;
-    nextBtn.disabled = page === pageCount;
+    prevBtn.disabled = getPrevPage() < 1;
+    nextBtn.disabled = getNextPage() > pageCount;
 
-    saveProgress();
+    saveProgress(page, rightPage);
   };
 
-  const navigate = (delta) => updatePage(currentPage + delta);
+  const navigate = (delta) => updatePage(delta > 0 ? getNextPage() : getPrevPage());
 
   // --- Progress save (debounced) ---
 
-  const saveProgress = () => {
+  const saveProgress = (page, rightPage) => {
+    const lastVisible = rightPage ?? page;
     clearTimeout(progressTimer);
     progressTimer = setTimeout(() => {
       fetch(`/reader/api/comic/${encodeURIComponent(comicUuid)}/progress`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ current_page: currentPage, is_completed: currentPage === pageCount }),
+        body: JSON.stringify({ current_page: page, is_completed: lastVisible >= pageCount }),
       }).catch(() => { });
     }, 500);
+  };
+
+  // --- Spread / cover-sep toggles ---
+
+  const toggleSpread = () => {
+    twoPageMode = !twoPageMode;
+    updateBtnStates();
+    updatePage(snapPage(currentPage));
+  };
+
+  const toggleCoverSep = () => {
+    coverSeparate = !coverSeparate;
+    updateBtnStates();
+    updatePage(snapPage(currentPage));
   };
 
   // --- Tap navigation (mobile + desktop) ---
@@ -147,6 +233,8 @@
 
   prevBtn.addEventListener('click', () => { navigate(-1); showControls(); });
   nextBtn.addEventListener('click', () => { navigate(1); showControls(); });
+  btnSpread.addEventListener('click', () => { toggleSpread(); showControls(); });
+  btnCoverSep.addEventListener('click', () => { if (!btnCoverSep.disabled) { toggleCoverSep(); showControls(); } });
 
   // --- Keyboard ---
 
@@ -161,6 +249,8 @@
   });
 
   // --- Init ---
+
+  updateBtnStates();
 
   if (img && spinner) {
     setSpinner(true);

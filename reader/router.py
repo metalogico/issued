@@ -446,6 +446,16 @@ def api_tags_list():
         return {"tags": repo.get_all_tags(conn)}
 
 
+@router.delete("/api/tags/{tag_name}")
+def api_tag_delete(tag_name: str):
+    """Delete a tag globally (removes it from all comics)."""
+    with db_connection() as conn:
+        found = repo.delete_tag(conn, tag_name)
+    if not found:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    return {"ok": True}
+
+
 # --- API: progress (continue reading) ---
 
 

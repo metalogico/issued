@@ -11,18 +11,64 @@
     No tags yet. Open the <strong>info panel</strong> on any comic (✎ button) or use the reader page to add tags.
   </p>
   {% else %}
-  <ul class="flex flex-wrap gap-3">
+  <ul class="flex flex-wrap gap-3" id="tags-list">
     {% for row in tag_rows %}
-    <li>
+    <li id="tag-item-{{ row.name | urlencode }}" class="group flex items-center gap-0">
       <a href="{{ request.url_for('browse_tag', tag_name=row.name) }}"
-        class="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white px-4 py-2 text-sm font-medium text-violet-700 shadow-sm transition hover:bg-violet-50 hover:shadow-md active:scale-95">
+        class="inline-flex items-center gap-2 rounded-l-full border border-r-0 border-violet-200 bg-white pl-4 pr-3 py-2 text-sm font-medium text-violet-700 shadow-sm transition hover:bg-violet-50">
         <i data-lucide="tag" class="h-3.5 w-3.5 shrink-0 text-violet-400"></i>
         {{ row.name }}
-        <span class="ml-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-600">{{ row.comic_count }}</span>
+        <span class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-600">{{ row.comic_count
+          }}</span>
       </a>
+      <button type="button"
+        class="delete-tag-btn inline-flex h-full items-center rounded-r-full border border-violet-200 bg-white px-2.5 py-2 text-gray-300 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-500 active:scale-95"
+        data-tag-name="{{ row.name }}" data-comic-count="{{ row.comic_count }}"
+        title="Delete tag&quot;{{ row.name }}&quot;">
+        <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+      </button>
     </li>
     {% endfor %}
   </ul>
   {% endif %}
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.getElementById('tags-list')?.addEventListener('click', async function (evt) {
+    const btn = evt.target.closest('.delete-tag-btn');
+    if (!btn) return;
+    const tagName = btn.dataset.tagName;
+    const comicCount = parseInt(btn.dataset.comicCount, 10);
+    const countNote = comicCount > 0
+      ? `It will be removed from <strong>${comicCount} comic${comicCount !== 1 ? 's' : ''}</strong>.`
+      : 'It is not assigned to any comic.';
+    const result = await Swal.fire({
+      title: `Delete \u201c${tagName}\u201d?`,
+      html: `${countNote} This cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+    });
+    if (!result.isConfirmed) return;
+    try {
+      const res = await fetch('/reader/api/tags/' + encodeURIComponent(tagName), { method: 'DELETE' });
+      if (!res.ok) throw new Error(res.status);
+      btn.closest('li')?.remove();
+      if (!document.querySelector('#tags-list li')) {
+        document.getElementById('tags-list').replaceWith(
+          Object.assign(document.createElement('p'), {
+            className: 'rounded-2xl border border-violet-100 bg-white/80 p-6 text-gray-600 shadow-sm',
+            innerHTML: 'No tags yet. Open the <strong>info panel</strong> on any comic (\u270e button) or use the reader page to add tags.',
+          })
+        );
+      }
+      Swal.fire({ icon: 'success', title: 'Tag deleted', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true });
+    } catch {
+      Swal.fire({ icon: 'error', title: 'Could not delete tag', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+    }
+  });
+</script>
 {% endblock %}

@@ -522,6 +522,18 @@ def get_comics_for_tag(conn, tag_name: str) -> list[dict]:
     return [{"series": name, "comics": comics} for name, comics in groups.items()]
 
 
+def delete_tag(conn, tag_name: str) -> bool:
+    """Delete a tag and all its comic associations.  Returns True if it existed."""
+    cur = conn.execute("SELECT id FROM tags WHERE name = ?", (tag_name,))
+    row = cur.fetchone()
+    if not row:
+        return False
+    conn.execute("DELETE FROM comic_tags WHERE tag_id = ?", (row["id"],))
+    conn.execute("DELETE FROM tags WHERE id = ?", (row["id"],))
+    conn.commit()
+    return True
+
+
 def set_tags_for_comic(conn, comic_uuid: str, tags: list[str]) -> list[str]:
     """Replace all tags for a comic.  Returns the final sorted tag list."""
     comic_id = get_comic_id_by_uuid(conn, comic_uuid)

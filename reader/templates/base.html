@@ -43,7 +43,7 @@
           </form>
         </div>
         <nav
-          class="flex shrink-0 flex-wrap items-center justify-center gap-1 sm:gap-2 lg:justify-end lg:w-[min(20rem,32%)]"
+          class="flex shrink-0 flex-nowrap items-center justify-center gap-1 sm:gap-2 lg:justify-end lg:w-[min(20rem,32%)]"
           aria-label="Main">
           <a href="{{ request.url_for('browse_root') }}"
             class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-violet-50 hover:text-violet-800 touch-manipulation">Home</a>
@@ -60,7 +60,7 @@
           </form>
           {% endif %}
           <button type="button" id="scan-library-btn" title="Scan library" aria-label="Scan library"
-            class="ml-auto flex h-10 w-10 items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 touch-manipulation">
+            class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 touch-manipulation">
             <i data-lucide="refresh-cw" class="h-4 w-4"></i>
           </button>
         </nav>

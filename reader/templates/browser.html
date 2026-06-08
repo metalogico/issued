@@ -139,7 +139,7 @@
             </button>
 
             <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}"
-              class="block w-full overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white relative z-0">
+              class="block w-full overflow-hidden rounded-2xl shadow-lg transition-all hover:-translate-y-1 bg-white relative z-0">
               <div class="relative">
                 {% if c.get('is_completed') %}
                 <span
@@ -191,7 +191,7 @@
         <li class="group relative shrink-0 snap-start">
           <div class="block w-[110px] sm:w-[130px] relative">
             <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}"
-              class="block w-full overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white relative z-0">
+              class="block w-full overflow-hidden rounded-2xl shadow-lg transition-all hover:-translate-y-1 bg-white relative z-0">
               <div class="relative">
                 {% if c.get('is_completed') %}
                 <span
@@ -283,11 +283,11 @@
         {% endif %}
         <div class="flex items-center gap-1 rounded-xl border border-violet-100 bg-white p-1 shadow-sm">
           <button type="button" id="view-grid-btn" title="Grid view"
-            class="view-toggle-btn flex h-8 w-8 items-center justify-center rounded-lg transition">
+            class="view-toggle-btn flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition">
             <i data-lucide="layout-grid" class="h-4 w-4"></i>
           </button>
           <button type="button" id="view-table-btn" title="Table view"
-            class="view-toggle-btn flex h-8 w-8 items-center justify-center rounded-lg transition">
+            class="view-toggle-btn flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition">
             <i data-lucide="list" class="h-4 w-4"></i>
           </button>
         </div>

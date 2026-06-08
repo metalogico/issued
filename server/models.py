@@ -78,3 +78,17 @@ class ComicMetadata(ComicMetadataBase, table=True):
     
     # Relationships
     comic: Optional[Comic] = Relationship(back_populates="metadata_rel")
+
+
+class Tag(SQLModel, table=True):
+    __tablename__ = "tags"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(unique=True, index=True)
+
+
+class ComicTag(SQLModel, table=True):
+    __tablename__ = "comic_tags"
+
+    comic_id: int = Field(foreign_key="comics.id", primary_key=True)
+    tag_id: int = Field(foreign_key="tags.id", primary_key=True)

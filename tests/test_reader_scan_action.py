@@ -33,7 +33,7 @@ def _test_config(tmp_path):
 
 def test_reader_scan_endpoint_returns_stats(tmp_path, monkeypatch):
     config = _test_config(tmp_path)
-    reader_router_module = importlib.import_module("reader.router")
+    api_library_module = importlib.import_module("reader.routes.api_library")
 
     db_file = tmp_path / "test.db"
     monkeypatch.setattr("server.database.DB_PATH", db_file, raising=True)
@@ -45,9 +45,9 @@ def test_reader_scan_endpoint_returns_stats(tmp_path, monkeypatch):
     init_db()
 
     monkeypatch.setattr("server.opds.get_config", lambda: config)
-    monkeypatch.setattr(reader_router_module, "get_config", lambda: config)
+    monkeypatch.setattr(api_library_module, "get_config", lambda: config)
     monkeypatch.setattr(
-        reader_router_module,
+        api_library_module,
         "scan_library",
         lambda cfg: {"added": 1, "updated": 2, "deleted": 0, "skipped": 3},
     )
@@ -64,7 +64,7 @@ def test_reader_scan_endpoint_returns_stats(tmp_path, monkeypatch):
 
 def test_reader_root_renders_scan_button(tmp_path, monkeypatch):
     config = _test_config(tmp_path)
-    reader_router_module = importlib.import_module("reader.router")
+    common_module = importlib.import_module("reader.routes._common")
 
     db_file = tmp_path / "test.db"
     monkeypatch.setattr("server.database.DB_PATH", db_file, raising=True)
@@ -76,7 +76,7 @@ def test_reader_root_renders_scan_button(tmp_path, monkeypatch):
     init_db()
 
     monkeypatch.setattr("server.opds.get_config", lambda: config)
-    monkeypatch.setattr(reader_router_module, "get_config", lambda: config)
+    monkeypatch.setattr(common_module, "get_config", lambda: config)
 
     client = TestClient(app)
     response = client.get("/reader/")
@@ -87,7 +87,7 @@ def test_reader_root_renders_scan_button(tmp_path, monkeypatch):
 
 def test_reader_recent_renders_scan_button(tmp_path, monkeypatch):
     config = _test_config(tmp_path)
-    reader_router_module = importlib.import_module("reader.router")
+    common_module = importlib.import_module("reader.routes._common")
 
     db_file = tmp_path / "test.db"
     monkeypatch.setattr("server.database.DB_PATH", db_file, raising=True)
@@ -99,7 +99,7 @@ def test_reader_recent_renders_scan_button(tmp_path, monkeypatch):
     init_db()
 
     monkeypatch.setattr("server.opds.get_config", lambda: config)
-    monkeypatch.setattr(reader_router_module, "get_config", lambda: config)
+    monkeypatch.setattr(common_module, "get_config", lambda: config)
 
     client = TestClient(app)
     response = client.get("/reader/recent")

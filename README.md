@@ -2,15 +2,7 @@
 
 **Your personal comic library server**
 
-Host your digital comics (CBZ/CBR files) on your home server and read them on any device. Issued automatically organizes your collection and makes it available through mobile apps like Panels, Chunky, or a built-in web reader.
-
-# ⚠️ ATTENTION ⚠️
-During a campaign affecting HUNDREDS of repositories on github, Issued has been hacked.
-If you have installed the repository by cloning the repo and using directly the python files between March 8–14, 
-please delete it immediately and clean your machine because the repository had a malicious code able to run unwanted code using nodejs.
-This has been solved on the repo and I'm still investigating HOW they hacked the repo without hacking my account.
-**I'm terribly sorry about this and I will do my best to prevent this in the future.**
-[You can read more in here](https://www.stepsecurity.io/blog/forcememo-hundreds-of-github-python-repos-compromised-via-account-takeover-and-force-push)
+Host your digital comics (CBZ/CBR/PDF files) on your home server and read them on any device. Issued automatically organizes your collection and makes it available through mobile apps like Panels, Chunky, or a built-in web reader.
 
 ## What You Get
 
@@ -21,6 +13,21 @@ This has been solved on the repo and I'm still investigating HOW they hacked the
 - 🌐 **Web reader** – Read in your browser without installing anything (on mobile too!)
 - 🔖 **Ongoing series** – Mark active series and quickly see new issues, totals, and possible gaps
 - ⚡ **Easy setup** – One command to get started
+
+## Supported Formats
+
+Issued works with all common digital comic formats:
+
+- **CBZ** (Comic Book ZIP) - ZIP archives containing images
+- **CBR** (Comic Book RAR) - RAR archives containing images (requires `unrar`)
+- **PDF** - PDF documents with comic pages
+
+All formats support:
+- ✅ Automatic page extraction and rendering
+- ✅ Thumbnail generation from first page
+- ✅ Metadata extraction (ComicInfo.xml or PDF metadata)
+- ✅ Full compatibility with OPDS readers and web reader
+- ✅ Reading progress tracking
 
 ## Collection view
 <img width="2314" height="1998" alt="image" src="https://github.com/user-attachments/assets/3e69bb33-28e4-4bcd-ad35-b2b29a4b1ff4" />
@@ -43,14 +50,14 @@ This has been solved on the repo and I'm still investigating HOW they hacked the
 
 > **Docker users:** skip this section — the Docker image includes everything you need.
 
-**For CBR files only** (skip if you only have CBZ):
+**For CBR files only** (skip if you only have CBZ or PDF):
 
 Install `unrar` on your computer:
 - **macOS**: `brew install rar`
 - **Linux**: `sudo apt install rar`
 - **Windows**: Download from [rarlab.com](https://www.rarlab.com/rar_add.htm)
 
-> **Note:** CBZ files work without any extra software. CBR files need `unrar` to extract.
+> **Note:** CBZ and PDF files work without any extra software. CBR files need `unrar` to extract.
 
 ## Installation
 
@@ -165,7 +172,7 @@ Examples:
 ```
 
 This will:
-- Find all CBZ/CBR files
+- Find all CBZ/CBR/PDF files
 - Create thumbnails
 - Build the library database
 

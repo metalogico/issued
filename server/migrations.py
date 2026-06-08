@@ -76,6 +76,59 @@ def ensure_ongoing_series_table() -> bool:
         conn.close()
 
 
+def ensure_tags_tables() -> bool:
+    """Create ``tags`` and ``comic_tags`` if they are missing.
+
+    Returns True when at least one table was created.  Used when
+    ``alembic_version`` is already at head but the tables were never applied.
+    """
+    if not DB_PATH.exists():
+        return False
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        conn.execute("PRAGMA foreign_keys=ON")
+        created = False
+
+        cur = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='tags'"
+        )
+        if cur.fetchone() is None:
+            conn.execute(
+                """
+                CREATE TABLE tags (
+                    id   INTEGER NOT NULL PRIMARY KEY,
+                    name TEXT    NOT NULL UNIQUE
+                )
+                """
+            )
+            conn.execute("CREATE UNIQUE INDEX ix_tags_name ON tags (name)")
+            created = True
+
+        cur = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='comic_tags'"
+        )
+        if cur.fetchone() is None:
+            conn.execute(
+                """
+                CREATE TABLE comic_tags (
+                    comic_id INTEGER NOT NULL REFERENCES comics(id) ON DELETE CASCADE,
+                    tag_id   INTEGER NOT NULL REFERENCES tags(id)   ON DELETE CASCADE,
+                    PRIMARY KEY (comic_id, tag_id)
+                )
+                """
+            )
+            created = True
+
+        if created:
+            conn.commit()
+            logger.warning(
+                "Created missing tags/comic_tags tables (schema repair; DB was already at head)."
+            )
+        return created
+    finally:
+        conn.close()
+
+
 def _backup_db() -> None:
     """Copy library.db → library.db.bak (overwrite previous backup)."""
     if DB_PATH.exists():

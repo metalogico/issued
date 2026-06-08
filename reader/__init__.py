@@ -3,6 +3,6 @@
 Serves /reader for browsing the library and reading comics in the browser.
 """
 
-from .router import router
+from .routes import router
 
 __all__ = ["router"]

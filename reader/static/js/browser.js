@@ -185,6 +185,9 @@
       const el = form.elements[name];
       if (el) el.value = data[name] ?? '';
     });
+    if (typeof window._tagsLoadForComic === 'function') {
+      window._tagsLoadForComic(currentUuid, data.tags || []);
+    }
   };
 
   // --- htmx events (GET metadata load) ---

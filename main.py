@@ -15,6 +15,7 @@ from server.config import DEFAULT_CONFIG_PATH, IssuedConfig, load_config
 from server.database import get_engine, init_db, reset_database
 from server.migrations import (
     ensure_ongoing_series_table,
+    ensure_tags_tables,
     get_status,
     run_migrations,
     stamp_if_needed,
@@ -144,6 +145,9 @@ def serve(
 
     if ensure_ongoing_series_table():
         logger.info("ongoing_series table was missing and has been repaired.")
+
+    if ensure_tags_tables():
+        logger.info("tags/comic_tags tables were missing and have been repaired.")
 
     # Initial scan on startup (populates DB if empty or picks up changes)
     logger.info("Running initial library scan...")

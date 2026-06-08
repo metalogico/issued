@@ -1,0 +1,94 @@
+<script>
+  (function () {
+    let _currentTagUUID = null;
+    let _currentTags = [];
+
+    function renderTagChips(tags, container) {
+      container.innerHTML = '';
+      tags.forEach(function (tag) {
+        const chip = document.createElement('span');
+        chip.className = 'inline-flex items-center gap-1 rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700';
+        const link = document.createElement('a');
+        link.href = '/reader/tags/' + encodeURIComponent(tag);
+        link.className = 'hover:underline';
+        link.textContent = tag;
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'ml-1 flex h-4 w-4 items-center justify-center rounded-full text-violet-400 hover:bg-violet-200 hover:text-violet-700 transition';
+        del.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-2.5 w-2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+        del.title = 'Remove tag';
+        del.addEventListener('click', function () { removeTag(tag); });
+        chip.appendChild(link);
+        chip.appendChild(del);
+        container.appendChild(chip);
+      });
+    }
+
+    function saveTags(tags) {
+      if (!_currentTagUUID) return;
+      fetch('/reader/api/comic/' + _currentTagUUID + '/tags', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tags: tags }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            _currentTags = data.tags;
+            renderTagChips(_currentTags, document.getElementById('comic-info-tags-chips'));
+          }
+        });
+    }
+
+    function addTag(name) {
+      name = name.trim();
+      if (!name) return;
+      const lower = name.toLowerCase();
+      if (_currentTags.some(function (t) { return t.toLowerCase() === lower; })) return;
+      saveTags(_currentTags.concat([name]));
+    }
+
+    function removeTag(name) {
+      saveTags(_currentTags.filter(function (t) { return t !== name; }));
+    }
+
+    function loadTagSuggestions() {
+      fetch('/reader/api/tags')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          const dl = document.getElementById('comic-info-tag-suggestions');
+          if (!dl) return;
+          dl.innerHTML = '';
+          (data.tags || []).forEach(function (t) {
+            const opt = document.createElement('option');
+            opt.value = t;
+            dl.appendChild(opt);
+          });
+        });
+    }
+
+    const input = document.getElementById('comic-info-tag-input');
+    const addBtn = document.getElementById('comic-info-tag-add');
+    if (input && addBtn) {
+      addBtn.addEventListener('click', function () {
+        addTag(input.value);
+        input.value = '';
+      });
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addTag(input.value);
+          input.value = '';
+        }
+      });
+    }
+
+    // Expose for browser.js to call after populating the form
+    window._tagsLoadForComic = function (uuid, tags) {
+      _currentTagUUID = uuid;
+      _currentTags = tags || [];
+      renderTagChips(_currentTags, document.getElementById('comic-info-tags-chips'));
+      loadTagSuggestions();
+    };
+  }());
+</script>

@@ -5,7 +5,8 @@
   data-page-count="{{ page_count }}" data-initial-page="{{ initial_page }}" tabindex="0"
   title="Tap left/right or use arrow keys to navigate">
 
-  <div class="reader-controls sticky top-0 z-10 mb-3 rounded-2xl bg-white/90 backdrop-blur-xl border border-white/30 px-3 py-3 shadow-lg transition-all duration-300 sm:mb-4 sm:px-6 sm:py-4">
+  <div
+    class="reader-controls sticky top-0 z-10 mb-3 rounded-2xl bg-white/90 backdrop-blur-xl border border-white/30 px-3 py-3 shadow-lg transition-all duration-300 sm:mb-4 sm:px-6 sm:py-4">
     <div class="flex items-center justify-between gap-2 sm:gap-4">
       <div class="flex-1 min-w-0">
         <h1 class="mb-0.5 truncate text-base font-bold text-gray-900 sm:mb-1 sm:text-lg">{{ comic_filename }}</h1>
@@ -14,10 +15,13 @@
         {% endif %}
         <div class="flex items-center gap-2 text-xs sm:gap-3 sm:text-sm">
           <span class="font-medium text-gray-600">
-            Page <span id="reader-page-num" class="font-bold text-violet-600">{{ initial_page }}</span> of <span
-              id="reader-page-total">{{ page_count }}</span>
+            Page
+            <span id="reader-page-num" class="font-bold text-violet-600" title="Click to jump to page">{{ initial_page
+              }}</span><input id="reader-page-input" type="number" class="hidden font-bold text-violet-600" min="1"
+              max="{{ page_count }}" aria-label="Jump to page">
+            of <span id="reader-page-total">{{ page_count }}</span>
           </span>
-          <div class="flex-1 max-w-xs">
+          <div class="reader-progress-wrap flex-1 max-w-xs" id="reader-progress-wrap" title="Click to jump to page">
             <div class="progress-bar h-2 rounded-full overflow-hidden">
               <div id="reader-progress"
                 class="h-full bg-gradient-to-r from-violet-500 to-purple-600 transition-all duration-300"
@@ -26,19 +30,57 @@
           </div>
         </div>
       </div>
-      <button type="button" id="fullscreen-toggle"
-        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
-        title="Toggle fullscreen (F)" aria-label="Fullscreen">
-        <svg id="fullscreen-icon-enter" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-        </svg>
-        <svg id="fullscreen-icon-exit" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
-          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
-        </svg>
-      </button>
+      <!-- Tags widget -->
+      <div id="reader-tags-wrap" class="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <div id="reader-tags-chips" class="flex flex-wrap gap-1.5"></div>
+        <div class="flex items-center gap-1">
+          <input type="text" id="reader-tag-input" list="reader-tag-suggestions" placeholder="Add tag…"
+            class="rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1 text-xs transition focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-200 w-28"
+            autocomplete="off">
+          <datalist id="reader-tag-suggestions"></datalist>
+          <button type="button" id="reader-tag-add"
+            class="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 active:scale-95">+</button>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" id="btn-spread"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
+          title="Toggle 2-page spread" aria-label="Toggle 2-page spread">
+          <svg id="icon-spread-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="9" height="18" rx="1.5" />
+            <rect x="13" y="3" width="9" height="18" rx="1.5" />
+          </svg>
+          <svg id="icon-spread-on" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="5" y="3" width="14" height="18" rx="1.5" />
+          </svg>
+        </button>
+        <button type="button" id="btn-cover-sep"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
+          title="First page separate (cover)" aria-label="First page separate" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="3" width="8" height="18" rx="1.5" />
+            <rect x="11" y="7" width="5.5" height="10" rx="1" />
+            <rect x="17.5" y="7" width="5.5" height="10" rx="1" />
+          </svg>
+        </button>
+        <button type="button" id="fullscreen-toggle"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
+          title="Toggle fullscreen (F)" aria-label="Fullscreen">
+          <svg id="fullscreen-icon-enter" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+          </svg>
+          <svg id="fullscreen-icon-exit" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -46,10 +88,15 @@
     class="reader-image-wrap flex min-h-[50vh] flex-1 items-center justify-center overflow-hidden rounded-2xl bg-gray-900 p-2 shadow-2xl cursor-pointer touch-manipulation select-none sm:min-h-[500px] sm:rounded-3xl sm:p-4"
     role="img" aria-label="Comic page – tap left for previous, right for next">
     <div id="reader-spinner" class="reader-spinner" aria-label="Loading page"></div>
-    <img id="reader-image" src="{{ request.url_for('api_comic_page', comic_uuid=comic_uuid, page_num=initial_page) }}"
-      alt="Page {{ initial_page }}"
-      class="max-h-[75dvh] max-w-full rounded-lg shadow-2xl transition-opacity duration-300 select-none pointer-events-none sm:max-h-[80vh]"
-      draggable="false">
+    <div id="reader-pages" class="reader-pages">
+      <img id="reader-image" src="{{ request.url_for('api_comic_page', comic_uuid=comic_uuid, page_num=initial_page) }}"
+        alt="Page {{ initial_page }}"
+        class="max-h-[75dvh] max-w-full rounded-lg shadow-2xl transition-opacity duration-300 select-none pointer-events-none sm:max-h-[80vh]"
+        draggable="false">
+      <img id="reader-image-right" alt=""
+        class="hidden max-h-[75dvh] max-w-full rounded-lg shadow-2xl transition-opacity duration-300 select-none pointer-events-none sm:max-h-[80vh]"
+        draggable="false">
+    </div>
   </div>
 
   <nav class="reader-navigation mt-4 flex justify-center gap-3 sm:mt-6 sm:gap-4"
@@ -87,10 +134,99 @@
       <span class="mx-2">or</span>
       <kbd class="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-gray-700 shadow">ESC</kbd>
       <span class="ml-2">for fullscreen</span>
+      <span class="mx-2">·</span>
+      <span class="mx-2">click page number or progress bar to jump</span>
     </p>
   </div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script src="{{ request.url_for('reader_static', path='/js/reader.js') }}"></script>
+<script>
+  (function () {
+    const comicUuid = document.querySelector('.reader[data-comic-uuid]')?.dataset.comicUuid;
+    if (!comicUuid) return;
+
+    let _tags = [];
+
+    function renderChips(tags) {
+      const container = document.getElementById('reader-tags-chips');
+      if (!container) return;
+      container.innerHTML = '';
+      tags.forEach(function (tag) {
+        const chip = document.createElement('span');
+        chip.className = 'inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700';
+        const link = document.createElement('a');
+        link.href = '/reader/tags/' + encodeURIComponent(tag);
+        link.className = 'hover:underline';
+        link.textContent = tag;
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-violet-400 hover:bg-violet-200 hover:text-violet-700 transition';
+        del.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:9px;height:9px"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+        del.title = 'Remove tag';
+        del.addEventListener('click', function () { saveTagsRemove(tag); });
+        chip.appendChild(link);
+        chip.appendChild(del);
+        container.appendChild(chip);
+      });
+    }
+
+    function saveTags(tags) {
+      fetch('/reader/api/comic/' + comicUuid + '/tags', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tags: tags }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) { _tags = data.tags; renderChips(_tags); }
+        });
+    }
+
+    function saveTagsAdd(name) {
+      name = name.trim();
+      if (!name) return;
+      if (_tags.some(function (t) { return t.toLowerCase() === name.toLowerCase(); })) return;
+      saveTags(_tags.concat([name]));
+    }
+
+    function saveTagsRemove(name) {
+      saveTags(_tags.filter(function (t) { return t !== name; }));
+    }
+
+    function loadSuggestions() {
+      fetch('/reader/api/tags')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          const dl = document.getElementById('reader-tag-suggestions');
+          if (!dl) return;
+          dl.innerHTML = '';
+          (data.tags || []).forEach(function (t) {
+            const opt = document.createElement('option');
+            opt.value = t;
+            dl.appendChild(opt);
+          });
+        });
+    }
+
+    // Load existing tags on page load
+    fetch('/reader/api/comic/' + comicUuid + '/tags')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        _tags = data.tags || [];
+        renderChips(_tags);
+        loadSuggestions();
+      });
+
+    const input = document.getElementById('reader-tag-input');
+    const addBtn = document.getElementById('reader-tag-add');
+    if (input && addBtn) {
+      addBtn.addEventListener('click', function () { saveTagsAdd(input.value); input.value = ''; });
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); saveTagsAdd(input.value); input.value = ''; }
+      });
+    }
+  }());
+</script>
 {% endblock %}

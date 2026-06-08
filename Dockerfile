@@ -30,7 +30,7 @@ FROM python:3.12-slim AS runtime
 
 # OCI image metadata
 LABEL org.opencontainers.image.source="https://github.com/metalogico/issued"
-LABEL org.opencontainers.image.description="Personal comic library server — OPDS + web reader for CBZ/CBR"
+LABEL org.opencontainers.image.description="Personal comic library server — OPDS + web reader for CBZ/CBR/PDF"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Enable non-free component and install unrar (proprietary).
@@ -38,7 +38,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 # without it every CBR comic silently fails to open.
 RUN sed -i 's/main$/main non-free/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends \
-        unrar \
+        unrar wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Pull the complete venv from the builder — nothing else crosses the boundary.
@@ -92,9 +92,9 @@ EXPOSE 8181
 
 # /opds/ exercises config load → DB query → XML serialisation end-to-end.
 # start-period=60s gives a large library time to finish its first scan.
-# wget is available in python:3.12-slim without extra packages.
+# Use Python stdlib urllib — wget is no longer bundled in python:3.12-slim.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget -qO- http://localhost:8181/opds/ || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8181/opds/')" || exit 1
 
 # ---------------------------------------------------------------------------
 # Entry point

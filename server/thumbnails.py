@@ -1,6 +1,6 @@
 """Thumbnail generation for Issued.
 
-Generates WebP thumbnails from the first page of CBZ/CBR archives,
+Generates WebP thumbnails from the first page of CBZ/CBR/PDF comic files,
 storing them under `thumbnails/{comic_uuid}.webp`.
 """
 

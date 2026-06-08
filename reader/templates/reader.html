@@ -5,7 +5,8 @@
   data-page-count="{{ page_count }}" data-initial-page="{{ initial_page }}" tabindex="0"
   title="Tap left/right or use arrow keys to navigate">
 
-  <div class="reader-controls sticky top-0 z-10 mb-3 rounded-2xl bg-white/90 backdrop-blur-xl border border-white/30 px-3 py-3 shadow-lg transition-all duration-300 sm:mb-4 sm:px-6 sm:py-4">
+  <div
+    class="reader-controls sticky top-0 z-10 mb-3 rounded-2xl bg-white/90 backdrop-blur-xl border border-white/30 px-3 py-3 shadow-lg transition-all duration-300 sm:mb-4 sm:px-6 sm:py-4">
     <div class="flex items-center justify-between gap-2 sm:gap-4">
       <div class="flex-1 min-w-0">
         <h1 class="mb-0.5 truncate text-base font-bold text-gray-900 sm:mb-1 sm:text-lg">{{ comic_filename }}</h1>
@@ -14,10 +15,13 @@
         {% endif %}
         <div class="flex items-center gap-2 text-xs sm:gap-3 sm:text-sm">
           <span class="font-medium text-gray-600">
-            Page <span id="reader-page-num" class="font-bold text-violet-600">{{ initial_page }}</span> of <span
-              id="reader-page-total">{{ page_count }}</span>
+            Page
+            <span id="reader-page-num" class="font-bold text-violet-600" title="Click to jump to page">{{ initial_page
+              }}</span><input id="reader-page-input" type="number" class="hidden font-bold text-violet-600" min="1"
+              max="{{ page_count }}" aria-label="Jump to page">
+            of <span id="reader-page-total">{{ page_count }}</span>
           </span>
-          <div class="flex-1 max-w-xs">
+          <div class="reader-progress-wrap flex-1 max-w-xs" id="reader-progress-wrap" title="Click to jump to page">
             <div class="progress-bar h-2 rounded-full overflow-hidden">
               <div id="reader-progress"
                 class="h-full bg-gradient-to-r from-violet-500 to-purple-600 transition-all duration-300"
@@ -27,42 +31,43 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-      <button type="button" id="btn-spread"
-        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
-        title="Toggle 2-page spread" aria-label="Toggle 2-page spread">
-        <svg id="icon-spread-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="3" width="9" height="18" rx="1.5"/>
-          <rect x="13" y="3" width="9" height="18" rx="1.5"/>
-        </svg>
-        <svg id="icon-spread-on" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="5" y="3" width="14" height="18" rx="1.5"/>
-        </svg>
-      </button>
-      <button type="button" id="btn-cover-sep"
-        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
-        title="First page separate (cover)" aria-label="First page separate" disabled>
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="1" y="3" width="8" height="18" rx="1.5"/>
-          <rect x="11" y="7" width="5.5" height="10" rx="1"/>
-          <rect x="17.5" y="7" width="5.5" height="10" rx="1"/>
-        </svg>
-      </button>
-      <button type="button" id="fullscreen-toggle"
-        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
-        title="Toggle fullscreen (F)" aria-label="Fullscreen">
-        <svg id="fullscreen-icon-enter" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-        </svg>
-        <svg id="fullscreen-icon-exit" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
-          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
-        </svg>
-      </button>
+        <button type="button" id="btn-spread"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
+          title="Toggle 2-page spread" aria-label="Toggle 2-page spread">
+          <svg id="icon-spread-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="9" height="18" rx="1.5" />
+            <rect x="13" y="3" width="9" height="18" rx="1.5" />
+          </svg>
+          <svg id="icon-spread-on" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="5" y="3" width="14" height="18" rx="1.5" />
+          </svg>
+        </button>
+        <button type="button" id="btn-cover-sep"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
+          title="First page separate (cover)" aria-label="First page separate" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="3" width="8" height="18" rx="1.5" />
+            <rect x="11" y="7" width="5.5" height="10" rx="1" />
+            <rect x="17.5" y="7" width="5.5" height="10" rx="1" />
+          </svg>
+        </button>
+        <button type="button" id="fullscreen-toggle"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
+          title="Toggle fullscreen (F)" aria-label="Fullscreen">
+          <svg id="fullscreen-icon-enter" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+          </svg>
+          <svg id="fullscreen-icon-exit" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -117,6 +122,8 @@
       <span class="mx-2">or</span>
       <kbd class="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-gray-700 shadow">ESC</kbd>
       <span class="ml-2">for fullscreen</span>
+      <span class="mx-2">·</span>
+      <span class="mx-2">click page number or progress bar to jump</span>
     </p>
   </div>
 </div>

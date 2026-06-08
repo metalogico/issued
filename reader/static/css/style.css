@@ -103,6 +103,46 @@
   flex-shrink: 1;
 }
 
+/* --- Progress bar: clickable scrubber --- */
+.reader-progress-wrap {
+  cursor: pointer;
+  padding: 8px 0;
+  margin: -8px 0;
+  touch-action: none;
+}
+
+.reader-progress-wrap:hover .progress-bar {
+  height: 0.375rem;
+}
+
+/* --- Inline page-jump input --- */
+#reader-page-num {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+#reader-page-input {
+  width: 3.5rem;
+  font-size: inherit;
+  font-weight: 700;
+  color: #7c3aed;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #7c3aed;
+  outline: none;
+  text-align: center;
+  padding: 0;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+#reader-page-input::-webkit-outer-spin-button,
+#reader-page-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* --- Fullscreen reader --- */
 .reader:fullscreen,
 .reader:-webkit-full-screen {

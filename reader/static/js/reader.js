@@ -19,6 +19,8 @@
   const fsIconEnter = $('#fullscreen-icon-enter');
   const fsIconExit = $('#fullscreen-icon-exit');
   const imageWrap = $('.reader-image-wrap');
+  const progressWrap = $('#reader-progress-wrap');
+  const pageInput = $('#reader-page-input');
   const btnSpread = $('#btn-spread');
   const iconSpreadOff = $('#icon-spread-off');
   const iconSpreadOn = $('#icon-spread-on');
@@ -158,6 +160,64 @@
       }).catch(() => { });
     }, 500);
   };
+
+  // --- Progress bar scrubbing ---
+
+  const pageFromBarEvent = (e) => {
+    const rect = progressWrap.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    return snapPage(Math.max(1, Math.min(pageCount, Math.round(ratio * (pageCount - 1)) + 1)));
+  };
+
+  let barDragging = false;
+
+  progressWrap.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    barDragging = true;
+    progressWrap.setPointerCapture(e.pointerId);
+    updatePage(pageFromBarEvent(e));
+  });
+
+  progressWrap.addEventListener('pointermove', (e) => {
+    if (!barDragging) return;
+    updatePage(pageFromBarEvent(e));
+  });
+
+  progressWrap.addEventListener('pointerup', () => { barDragging = false; });
+  progressWrap.addEventListener('pointercancel', () => { barDragging = false; });
+
+  // --- Inline page-number jump ---
+
+  const openPageInput = () => {
+    pageNumEl.classList.add('hidden');
+    pageInput.classList.remove('hidden');
+    pageInput.value = currentPage;
+    pageInput.select();
+  };
+
+  const commitPageInput = () => {
+    const val = parseInt(pageInput.value, 10);
+    pageInput.classList.add('hidden');
+    pageNumEl.classList.remove('hidden');
+    if (!isNaN(val) && val >= 1 && val <= pageCount) {
+      updatePage(snapPage(val));
+    }
+  };
+
+  const cancelPageInput = () => {
+    pageInput.classList.add('hidden');
+    pageNumEl.classList.remove('hidden');
+  };
+
+  pageNumEl.addEventListener('click', openPageInput);
+
+  pageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commitPageInput(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancelPageInput(); }
+    e.stopPropagation();
+  });
+
+  pageInput.addEventListener('blur', commitPageInput);
 
   // --- Spread / cover-sep toggles ---
 

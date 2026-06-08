@@ -35,8 +35,7 @@
           </a>
         </div>
         <div class="min-w-0 flex-1 flex justify-center px-0 lg:px-2">
-          <form action="{{ request.url_for('browse_search') }}" method="get" role="search"
-            class="w-full max-w-md">
+          <form action="{{ request.url_for('browse_search') }}" method="get" role="search" class="w-full max-w-md">
             <input type="search" name="q" value="{{ request.query_params.get('q', '') }}"
               placeholder="Search your comics…"
               class="w-full rounded-xl border-2 border-violet-200 bg-white px-4 py-3 text-base placeholder-gray-400 shadow-sm transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none touch-manipulation min-h-[44px] sm:py-2 sm:text-sm sm:min-h-0"
@@ -50,6 +49,8 @@
             class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-violet-50 hover:text-violet-800 touch-manipulation">Home</a>
           <a href="{{ request.url_for('browse_ongoings') }}"
             class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-violet-50 hover:text-violet-800 touch-manipulation">Ongoing</a>
+          <a href="{{ request.url_for('browse_tags') }}"
+            class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-violet-50 hover:text-violet-800 touch-manipulation">Tags</a>
           <a href="{{ request.url_for('browse_last_added') }}"
             class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-violet-50 hover:text-violet-800 touch-manipulation">Recent</a>
           {% if reader_auth_enabled %}

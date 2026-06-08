@@ -92,9 +92,9 @@ EXPOSE 8181
 
 # /opds/ exercises config load → DB query → XML serialisation end-to-end.
 # start-period=60s gives a large library time to finish its first scan.
-# wget is available in python:3.12-slim without extra packages.
+# Use Python stdlib urllib — wget is no longer bundled in python:3.12-slim.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget -qO- http://localhost:8181/opds/ || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8181/opds/')" || exit 1
 
 # ---------------------------------------------------------------------------
 # Entry point

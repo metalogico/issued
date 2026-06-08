@@ -368,6 +368,10 @@ def api_comic_page(comic_uuid: str, page_num: int):
 # --- API: metadata (info panel) ---
 
 
+class TagsUpdate(BaseModel):
+    tags: list[str]
+
+
 class MetadataUpdate(BaseModel):
     title: str | None = None
     series: str | None = None
@@ -392,11 +396,12 @@ class OngoingUpdate(BaseModel):
 
 @router.get("/api/comic/{comic_uuid}/metadata")
 def api_comic_metadata_get(comic_uuid: str):
-    """JSON: comic filename, uuid, and editable metadata."""
+    """JSON: comic filename, uuid, editable metadata, and tags."""
     with db_connection() as conn:
         out = repo.get_metadata(conn, comic_uuid)
         if out is None:
             raise HTTPException(status_code=404, detail="Comic not found")
+        out["tags"] = repo.get_tags_for_comic(conn, comic_uuid)
         return out
 
 
@@ -409,6 +414,36 @@ def api_comic_metadata_patch(comic_uuid: str, body: MetadataUpdate):
         payload = body.model_dump(exclude_unset=True)
         repo.update_metadata(conn, comic_uuid, payload)
         return {"ok": True}
+
+
+# --- API: tags ---
+
+
+@router.get("/api/comic/{comic_uuid}/tags")
+def api_comic_tags_get(comic_uuid: str):
+    """JSON: list of tags for a comic."""
+    with db_connection() as conn:
+        if repo.get_comic_id_by_uuid(conn, comic_uuid) is None:
+            raise HTTPException(status_code=404, detail="Comic not found")
+        tags = repo.get_tags_for_comic(conn, comic_uuid)
+        return {"tags": tags}
+
+
+@router.put("/api/comic/{comic_uuid}/tags")
+def api_comic_tags_put(comic_uuid: str, body: TagsUpdate):
+    """Replace tag list for a comic."""
+    with db_connection() as conn:
+        if repo.get_comic_id_by_uuid(conn, comic_uuid) is None:
+            raise HTTPException(status_code=404, detail="Comic not found")
+        tags = repo.set_tags_for_comic(conn, comic_uuid, body.tags)
+        return {"ok": True, "tags": tags}
+
+
+@router.get("/api/tags")
+def api_tags_list():
+    """JSON: all tag names in the library (for autocomplete)."""
+    with db_connection() as conn:
+        return {"tags": repo.get_all_tags(conn)}
 
 
 # --- API: progress (continue reading) ---
@@ -514,6 +549,51 @@ def api_folder_complete_all(folder_id: int, request: Request):
                 "folder_id": folder_id,
             },
         )
+
+
+# --- Browse: tags ---
+
+
+@router.get("/tags")
+def browse_tags(request: Request):
+    """Tag index: all tags with comic counts."""
+    with db_connection() as conn:
+        tag_rows = repo.get_all_tags_with_counts(conn)
+    return templates.TemplateResponse(
+        "tags.html",
+        {
+            "request": request,
+            "title": f"Tags — {_library_title()}",
+            "tag_rows": tag_rows,
+            "reader_auth_enabled": _reader_auth_enabled(),
+        },
+    )
+
+
+@router.get("/tags/{tag_name}")
+def browse_tag(request: Request, tag_name: str):
+    """Browse all comics with a given tag."""
+    with db_connection() as conn:
+        grouped_comics = repo.get_comics_for_tag(conn, tag_name)
+    return templates.TemplateResponse(
+        "browser.html",
+        {
+            "request": request,
+            "title": f"Tag: {tag_name} — {_library_title()}",
+            "breadcrumbs": [],
+            "folders": [],
+            "comics": [],
+            "grouped_comics": grouped_comics,
+            "is_search": True,
+            "show_last_added": False,
+            "last_added_comics": [],
+            "continue_reading_comics": [],
+            "reader_auth_enabled": _reader_auth_enabled(),
+            "folder_id": None,
+            "is_leaf": False,
+            "is_ongoing": False,
+        },
+    )
 
 
 @router.post("/api/library/scan")

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Tags — {{ title }}{% endblock %}
+{% block content %}
+<div class="tags-index fade-in">
+  <h1
+    class="mb-6 bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-2xl font-bold text-transparent sm:text-3xl">
+    Tags</h1>
+
+  {% if not tag_rows %}
+  <p class="rounded-2xl border border-violet-100 bg-white/80 p-6 text-gray-600 shadow-sm">
+    No tags yet. Open the <strong>info panel</strong> on any comic (✎ button) or use the reader page to add tags.
+  </p>
+  {% else %}
+  <ul class="flex flex-wrap gap-3">
+    {% for row in tag_rows %}
+    <li>
+      <a href="{{ request.url_for('browse_tag', tag_name=row.name) }}"
+        class="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white px-4 py-2 text-sm font-medium text-violet-700 shadow-sm transition hover:bg-violet-50 hover:shadow-md active:scale-95">
+        <i data-lucide="tag" class="h-3.5 w-3.5 shrink-0 text-violet-400"></i>
+        {{ row.name }}
+        <span class="ml-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-600">{{ row.comic_count }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endblock %}

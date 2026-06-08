@@ -200,14 +200,19 @@ def get_continue_reading_comics(conn, limit: int = 12) -> list[dict]:
 
 
 def search_comics(conn, q: str) -> list[dict]:
-    """Comics matching q in filename/title/series, with is_completed."""
+    """Comics matching q in filename/title/series/tags, with is_completed."""
     if not q or not q.strip():
         return []
     like = f"%{q.strip()}%"
     cur = conn.execute(
         _COMICS_WITH_META
-        + " WHERE c.filename LIKE ? OR m.title LIKE ? OR m.series LIKE ? ORDER BY c.filename",
-        (like, like, like),
+        + """
+         LEFT JOIN comic_tags ct ON ct.comic_id = c.id
+         LEFT JOIN tags t ON t.id = ct.tag_id
+        """
+        + " WHERE c.filename LIKE ? OR m.title LIKE ? OR m.series LIKE ? OR t.name LIKE ?"
+        + " GROUP BY c.id ORDER BY c.filename",
+        (like, like, like, like),
     )
     return [dict(row) for row in cur.fetchall()]
 
@@ -219,9 +224,13 @@ def search_comics_grouped(conn, q: str) -> list[dict]:
     like = f"%{q.strip()}%"
     cur = conn.execute(
         _COMICS_WITH_META
-        + " WHERE c.filename LIKE ? OR m.title LIKE ? OR m.series LIKE ?"
-        + " ORDER BY f.name, c.filename",
-        (like, like, like),
+        + """
+         LEFT JOIN comic_tags ct ON ct.comic_id = c.id
+         LEFT JOIN tags t ON t.id = ct.tag_id
+        """
+        + " WHERE c.filename LIKE ? OR m.title LIKE ? OR m.series LIKE ? OR t.name LIKE ?"
+        + " GROUP BY c.id ORDER BY f.name, c.filename",
+        (like, like, like, like),
     )
     rows = [dict(row) for row in cur.fetchall()]
     groups: dict[str, list] = {}
@@ -451,6 +460,95 @@ def toggle_comic_completed(conn, comic_uuid: str) -> bool | None:
     conn.commit()
 
     return new_state
+
+
+# --- Tags ---
+
+
+def get_tags_for_comic(conn, comic_uuid: str) -> list[str]:
+    """Sorted list of tag names for a comic."""
+    comic_id = get_comic_id_by_uuid(conn, comic_uuid)
+    if not comic_id:
+        return []
+    cur = conn.execute(
+        """
+        SELECT t.name FROM tags t
+        INNER JOIN comic_tags ct ON ct.tag_id = t.id
+        WHERE ct.comic_id = ?
+        ORDER BY t.name COLLATE NOCASE
+        """,
+        (comic_id,),
+    )
+    return [row["name"] for row in cur.fetchall()]
+
+
+def get_all_tags(conn) -> list[str]:
+    """All tag names sorted (for autocomplete)."""
+    cur = conn.execute("SELECT name FROM tags ORDER BY name COLLATE NOCASE")
+    return [row["name"] for row in cur.fetchall()]
+
+
+def get_all_tags_with_counts(conn) -> list[dict]:
+    """All tags with their comic counts, sorted by name."""
+    cur = conn.execute(
+        """
+        SELECT t.name, COUNT(ct.comic_id) AS comic_count
+        FROM tags t
+        LEFT JOIN comic_tags ct ON ct.tag_id = t.id
+        GROUP BY t.id
+        ORDER BY t.name COLLATE NOCASE
+        """
+    )
+    return [dict(row) for row in cur.fetchall()]
+
+
+def get_comics_for_tag(conn, tag_name: str) -> list[dict]:
+    """All comics with the given tag, grouped by folder."""
+    cur = conn.execute(
+        _COMICS_WITH_META
+        + """
+         INNER JOIN comic_tags ct ON ct.comic_id = c.id
+         INNER JOIN tags t ON t.id = ct.tag_id
+        """
+        + " WHERE t.name = ? ORDER BY f.name, c.filename",
+        (tag_name,),
+    )
+    rows = [dict(row) for row in cur.fetchall()]
+    groups: dict[str, list] = {}
+    for row in rows:
+        key = row["folder_name"] or ""
+        groups.setdefault(key, [])
+        groups[key].append(row)
+    return [{"series": name, "comics": comics} for name, comics in groups.items()]
+
+
+def set_tags_for_comic(conn, comic_uuid: str, tags: list[str]) -> list[str]:
+    """Replace all tags for a comic.  Returns the final sorted tag list."""
+    comic_id = get_comic_id_by_uuid(conn, comic_uuid)
+    if not comic_id:
+        return []
+
+    normalised = sorted({t.strip() for t in tags if t.strip()}, key=str.casefold)
+
+    # Upsert tag names
+    tag_ids: list[int] = []
+    for name in normalised:
+        conn.execute(
+            "INSERT INTO tags (name) VALUES (?) ON CONFLICT(name) DO NOTHING",
+            (name,),
+        )
+        cur = conn.execute("SELECT id FROM tags WHERE name = ?", (name,))
+        tag_ids.append(cur.fetchone()["id"])
+
+    # Replace join rows
+    conn.execute("DELETE FROM comic_tags WHERE comic_id = ?", (comic_id,))
+    for tag_id in tag_ids:
+        conn.execute(
+            "INSERT INTO comic_tags (comic_id, tag_id) VALUES (?, ?)",
+            (comic_id, tag_id),
+        )
+    conn.commit()
+    return normalised
 
 
 # --- Ongoing series (folder marks) ---

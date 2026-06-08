@@ -30,6 +30,18 @@
           </div>
         </div>
       </div>
+      <!-- Tags widget -->
+      <div id="reader-tags-wrap" class="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <div id="reader-tags-chips" class="flex flex-wrap gap-1.5"></div>
+        <div class="flex items-center gap-1">
+          <input type="text" id="reader-tag-input" list="reader-tag-suggestions" placeholder="Add tag…"
+            class="rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1 text-xs transition focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-200 w-28"
+            autocomplete="off">
+          <datalist id="reader-tag-suggestions"></datalist>
+          <button type="button" id="reader-tag-add"
+            class="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 active:scale-95">+</button>
+        </div>
+      </div>
       <div class="flex items-center gap-2">
         <button type="button" id="btn-spread"
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
@@ -130,4 +142,91 @@
 {% endblock %}
 {% block scripts %}
 <script src="{{ request.url_for('reader_static', path='/js/reader.js') }}"></script>
+<script>
+  (function () {
+    const comicUuid = document.querySelector('.reader[data-comic-uuid]')?.dataset.comicUuid;
+    if (!comicUuid) return;
+
+    let _tags = [];
+
+    function renderChips(tags) {
+      const container = document.getElementById('reader-tags-chips');
+      if (!container) return;
+      container.innerHTML = '';
+      tags.forEach(function (tag) {
+        const chip = document.createElement('span');
+        chip.className = 'inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700';
+        const link = document.createElement('a');
+        link.href = '/reader/tags/' + encodeURIComponent(tag);
+        link.className = 'hover:underline';
+        link.textContent = tag;
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-violet-400 hover:bg-violet-200 hover:text-violet-700 transition';
+        del.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:9px;height:9px"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+        del.title = 'Remove tag';
+        del.addEventListener('click', function () { saveTagsRemove(tag); });
+        chip.appendChild(link);
+        chip.appendChild(del);
+        container.appendChild(chip);
+      });
+    }
+
+    function saveTags(tags) {
+      fetch('/reader/api/comic/' + comicUuid + '/tags', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tags: tags }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) { _tags = data.tags; renderChips(_tags); }
+        });
+    }
+
+    function saveTagsAdd(name) {
+      name = name.trim();
+      if (!name) return;
+      if (_tags.some(function (t) { return t.toLowerCase() === name.toLowerCase(); })) return;
+      saveTags(_tags.concat([name]));
+    }
+
+    function saveTagsRemove(name) {
+      saveTags(_tags.filter(function (t) { return t !== name; }));
+    }
+
+    function loadSuggestions() {
+      fetch('/reader/api/tags')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          const dl = document.getElementById('reader-tag-suggestions');
+          if (!dl) return;
+          dl.innerHTML = '';
+          (data.tags || []).forEach(function (t) {
+            const opt = document.createElement('option');
+            opt.value = t;
+            dl.appendChild(opt);
+          });
+        });
+    }
+
+    // Load existing tags on page load
+    fetch('/reader/api/comic/' + comicUuid + '/tags')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        _tags = data.tags || [];
+        renderChips(_tags);
+        loadSuggestions();
+      });
+
+    const input = document.getElementById('reader-tag-input');
+    const addBtn = document.getElementById('reader-tag-add');
+    if (input && addBtn) {
+      addBtn.addEventListener('click', function () { saveTagsAdd(input.value); input.value = ''; });
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); saveTagsAdd(input.value); input.value = ''; }
+      });
+    }
+  }());
+</script>
 {% endblock %}

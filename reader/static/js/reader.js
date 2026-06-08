@@ -132,7 +132,6 @@
       preloadR.src = pageUrl(rightPage);
     } else if (imgRight) {
       imgRight.classList.add('hidden');
-      if (pagesEl) pagesEl.classList.remove('spread-mode');
     }
 
     // Update UI
@@ -155,7 +154,7 @@
       fetch(`/reader/api/comic/${encodeURIComponent(comicUuid)}/progress`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ current_page: page, is_completed: lastVisible >= pageCount }),
+        body: JSON.stringify({ current_page: lastVisible, is_completed: lastVisible >= pageCount }),
       }).catch(() => { });
     }, 500);
   };

@@ -69,6 +69,40 @@
   transition: width 0.3s ease;
 }
 
+/* --- View toggle buttons (spread / cover-separate) --- */
+.btn-view-active {
+  background-color: #ede9fe;
+  color: #7c3aed;
+}
+
+.btn-view-active:hover {
+  background-color: #ddd6fe;
+}
+
+#btn-cover-sep:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* --- Two-page spread layout --- */
+.reader-pages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.reader-pages.spread-mode {
+  gap: 4px;
+}
+
+.reader-pages.spread-mode img {
+  max-width: calc(50% - 2px);
+  flex-shrink: 1;
+}
+
 /* --- Fullscreen reader --- */
 .reader:fullscreen,
 .reader:-webkit-full-screen {

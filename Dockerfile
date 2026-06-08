@@ -38,7 +38,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 # without it every CBR comic silently fails to open.
 RUN sed -i 's/main$/main non-free/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends \
-        unrar \
+        unrar wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Pull the complete venv from the builder — nothing else crosses the boundary.

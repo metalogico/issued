@@ -26,6 +26,30 @@
           </div>
         </div>
       </div>
+      <div class="flex items-center gap-2">
+      <button type="button" id="btn-spread"
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
+        title="Toggle 2-page spread" aria-label="Toggle 2-page spread">
+        <svg id="icon-spread-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="9" height="18" rx="1.5"/>
+          <rect x="13" y="3" width="9" height="18" rx="1.5"/>
+        </svg>
+        <svg id="icon-spread-on" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="3" width="14" height="18" rx="1.5"/>
+        </svg>
+      </button>
+      <button type="button" id="btn-cover-sep"
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
+        title="First page separate (cover)" aria-label="First page separate" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="3" width="8" height="18" rx="1.5"/>
+          <rect x="11" y="7" width="5.5" height="10" rx="1"/>
+          <rect x="17.5" y="7" width="5.5" height="10" rx="1"/>
+        </svg>
+      </button>
       <button type="button" id="fullscreen-toggle"
         class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
         title="Toggle fullscreen (F)" aria-label="Fullscreen">
@@ -39,6 +63,7 @@
           <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
         </svg>
       </button>
+      </div>
     </div>
   </div>
 
@@ -46,10 +71,15 @@
     class="reader-image-wrap flex min-h-[50vh] flex-1 items-center justify-center overflow-hidden rounded-2xl bg-gray-900 p-2 shadow-2xl cursor-pointer touch-manipulation select-none sm:min-h-[500px] sm:rounded-3xl sm:p-4"
     role="img" aria-label="Comic page – tap left for previous, right for next">
     <div id="reader-spinner" class="reader-spinner" aria-label="Loading page"></div>
-    <img id="reader-image" src="{{ request.url_for('api_comic_page', comic_uuid=comic_uuid, page_num=initial_page) }}"
-      alt="Page {{ initial_page }}"
-      class="max-h-[75dvh] max-w-full rounded-lg shadow-2xl transition-opacity duration-300 select-none pointer-events-none sm:max-h-[80vh]"
-      draggable="false">
+    <div id="reader-pages" class="reader-pages">
+      <img id="reader-image" src="{{ request.url_for('api_comic_page', comic_uuid=comic_uuid, page_num=initial_page) }}"
+        alt="Page {{ initial_page }}"
+        class="max-h-[75dvh] max-w-full rounded-lg shadow-2xl transition-opacity duration-300 select-none pointer-events-none sm:max-h-[80vh]"
+        draggable="false">
+      <img id="reader-image-right" src="" alt=""
+        class="hidden max-h-[75dvh] max-w-full rounded-lg shadow-2xl transition-opacity duration-300 select-none pointer-events-none sm:max-h-[80vh]"
+        draggable="false">
+    </div>
   </div>
 
   <nav class="reader-navigation mt-4 flex justify-center gap-3 sm:mt-6 sm:gap-4"

@@ -233,7 +233,7 @@
   prevBtn.addEventListener('click', () => { navigate(-1); showControls(); });
   nextBtn.addEventListener('click', () => { navigate(1); showControls(); });
   btnSpread.addEventListener('click', () => { toggleSpread(); showControls(); });
-  btnCoverSep.addEventListener('click', () => { if (!btnCoverSep.disabled) { toggleCoverSep(); showControls(); } });
+  btnCoverSep.addEventListener('click', () => { toggleCoverSep(); showControls(); });
 
   // --- Keyboard ---
 

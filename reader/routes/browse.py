@@ -29,9 +29,9 @@ def browse_root(request: Request):
             continue_reading = repo.get_continue_reading_comics(conn, 12)
             ongoing_ctx = _folder_ongoing_context(conn, folder_id)
             return templates.TemplateResponse(
+                request,
                 "browser.html",
                 {
-                    "request": request,
                     "title": _library_title(),
                     "breadcrumbs": [],
                     "folders": subfolders,
@@ -50,9 +50,9 @@ def browse_root(request: Request):
         repo.add_folder_item_counts(conn, top_folders)
         continue_reading = repo.get_continue_reading_comics(conn, 12)
         return templates.TemplateResponse(
+            request,
             "browser.html",
             {
-                "request": request,
                 "title": _library_title(),
                 "breadcrumbs": [],
                 "folders": top_folders,
@@ -80,9 +80,9 @@ def browse_search(request: Request, q: str = ""):
         grouped_comics = repo.search_comics_grouped(conn, q)
 
     return templates.TemplateResponse(
+        request,
         "browser.html",
         {
-            "request": request,
             "title": f"Search: {q} — {_library_title()}",
             "breadcrumbs": [],
             "folders": [],
@@ -111,9 +111,9 @@ def browse_last_added(request: Request, limit: int = 50):
         comics = repo.get_last_added_comics(conn, min(limit, 200))
 
     return templates.TemplateResponse(
+        request,
         "browser.html",
         {
-            "request": request,
             "title": f"Last added — {_library_title()}",
             "breadcrumbs": [],
             "folders": [],
@@ -140,9 +140,9 @@ def browse_ongoings(request: Request):
     with db_connection() as conn:
         ongoing_rows = repo.list_ongoing_series_rows(conn)
     return templates.TemplateResponse(
+        request,
         "ongoings.html",
         {
-            "request": request,
             "title": _library_title(),
             "ongoing_rows": ongoing_rows,
             "reader_auth_enabled": _reader_auth_enabled(),
@@ -167,9 +167,9 @@ def browse_folder(request: Request, folder_id: int):
         ongoing_ctx = _folder_ongoing_context(conn, folder_id)
 
     return templates.TemplateResponse(
+        request,
         "browser.html",
         {
-            "request": request,
             "title": f"{folder['name']} — {_library_title()}",
             "breadcrumbs": breadcrumbs,
             "folders": subfolders,
@@ -205,9 +205,9 @@ def reader_view(request: Request, comic_uuid: str):
         issue_title = (metadata or {}).get("title")
 
     return templates.TemplateResponse(
+        request,
         "reader.html",
         {
-            "request": request,
             "title": f"{comic['filename']} — {_library_title()}",
             "breadcrumbs": breadcrumbs,
             "comic_uuid": comic_uuid,
@@ -229,9 +229,9 @@ def browse_tags(request: Request):
     with db_connection() as conn:
         tag_rows = repo.get_all_tags_with_counts(conn)
     return templates.TemplateResponse(
+        request,
         "tags.html",
         {
-            "request": request,
             "title": f"Tags — {_library_title()}",
             "tag_rows": tag_rows,
             "reader_auth_enabled": _reader_auth_enabled(),
@@ -245,9 +245,9 @@ def browse_tag(request: Request, tag_name: str):
     with db_connection() as conn:
         grouped_comics = repo.get_comics_for_tag(conn, tag_name)
     return templates.TemplateResponse(
+        request,
         "browser.html",
         {
-            "request": request,
             "title": f"Tag: {tag_name} — {_library_title()}",
             "breadcrumbs": [],
             "folders": [],

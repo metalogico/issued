@@ -57,9 +57,9 @@ def api_folder_complete_all(folder_id: int, request: Request):
         comics = repo.get_comics_in_folder(conn, folder_id)
 
         return templates.TemplateResponse(
+            request,
             "partials/comics-section.html",
             {
-                "request": request,
                 "comics": comics,
                 "grouped_comics": [],
                 "is_search": False,

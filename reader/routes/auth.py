@@ -64,8 +64,9 @@ def _login_template(request: Request, error: str | None = None, next: str = ""):
     except FileNotFoundError:
         title = "Comic Library"
     return templates.TemplateResponse(
+        request,
         "login.html",
-        {"request": request, "title": title, "error": error, "next": next},
+        {"title": title, "error": error, "next": next},
     )
 
 

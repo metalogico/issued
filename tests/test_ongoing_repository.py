@@ -1,6 +1,6 @@
 import sqlite3
 
-from reader import repository as repo
+from reader import repo
 
 
 def _setup_schema(conn: sqlite3.Connection) -> None:

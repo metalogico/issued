@@ -1,0 +1,32 @@
+{% if folders %}
+<section class="mb-8">
+  <h2 class="mb-4 text-lg font-bold text-gray-800">Folders</h2>
+  <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+    {% for f in folders %}
+    <li class="flex">
+      <a href="{{ request.url_for('browse_folder', folder_id=f.id) }}"
+        class="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+        data-folder-id="{{ f.id }}">
+        <div
+          class="folder-preview-mosaic relative aspect-[2/3] w-full overflow-hidden bg-gradient-to-br from-violet-50 to-purple-50">
+          <div class="folder-preview-placeholder absolute inset-0 flex items-center justify-center">
+            <i data-lucide="folder" class="h-12 w-12 text-violet-300"></i>
+          </div>
+          <div class="folder-preview-images absolute inset-0 hidden grid-cols-2 grid-rows-2 gap-1 p-1">
+            <div class="folder-thumb folder-thumb-1 rounded"></div>
+            <div class="folder-thumb folder-thumb-2 rounded"></div>
+            <div class="folder-thumb folder-thumb-3 rounded"></div>
+            <div class="folder-thumb folder-thumb-4 rounded"></div>
+          </div>
+        </div>
+        <div class="flex min-h-11 flex-col items-center justify-center p-4">
+          <span class="line-clamp-2 text-center text-sm font-semibold text-gray-800 leading-snug">{{ f.name }}</span>
+          <span class="mt-1.5 shrink-0 text-center text-xs font-medium text-violet-600">{{ f.get('item_count', 0) }}
+            items</span>
+        </div>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

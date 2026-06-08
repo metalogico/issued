@@ -1,0 +1,55 @@
+{% if show_last_added and last_added_comics %}
+<details class="group mb-8">
+  <summary class="mb-4 flex cursor-pointer items-center justify-between list-none">
+    <div class="flex items-center gap-3">
+      <i data-lucide="chevron-right" class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90"></i>
+      <h2 class="text-lg font-bold text-gray-800">Last Added</h2>
+    </div>
+    <a href="{{ request.url_for('browse_last_added') }}"
+      class="text-sm font-semibold text-violet-600 transition hover:text-violet-700"
+      onclick="event.stopPropagation()">See all →</a>
+  </summary>
+  <div class="-mx-4 overflow-x-auto px-4 py-4 sm:-mx-0 sm:px-0 snap-x snap-mandatory scroll-smooth touch-pan-x">
+    <ul class="flex gap-4 py-3">
+      {% for c in last_added_comics %}
+      <li class="group relative shrink-0 snap-start">
+        <div class="block w-[110px] sm:w-[130px] relative">
+          <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}"
+            class="block w-full overflow-hidden rounded-2xl shadow-lg transition-all hover:-translate-y-1 bg-white relative z-0">
+            <div class="relative">
+              {% if c.get('is_completed') %}
+              <span
+                class="comic-completed-badge absolute left-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white shadow-md"
+                title="Completed">
+                <i data-lucide="check" class="h-[14px] w-[14px]"></i>
+              </span>
+              {% endif %}
+              <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
+                class="aspect-[2/3] w-full object-cover" loading="lazy">
+            </div>
+            <div class="bg-white p-2">
+              <span class="line-clamp-2 block text-center text-xs font-medium text-gray-800">{{ c.filename }}</span>
+              {% if c.get('page_count') and c.page_count > 0 %}
+              <span class="mt-1 block text-center text-[10px] text-gray-500">{{ c.page_count }} pages</span>
+              {% endif %}
+            </div>
+          </a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</details>
+{% elif show_last_added %}
+<details class="group mb-8">
+  <summary class="mb-4 flex cursor-pointer items-center justify-between list-none">
+    <div class="flex items-center gap-3">
+      <i data-lucide="chevron-right" class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90"></i>
+      <h2 class="text-lg font-bold text-gray-800">Last Added</h2>
+    </div>
+    <a href="{{ request.url_for('browse_last_added') }}"
+      class="text-sm font-semibold text-violet-600 transition hover:text-violet-700"
+      onclick="event.stopPropagation()">See all →</a>
+  </summary>
+</details>
+{% endif %}

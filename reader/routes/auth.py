@@ -7,7 +7,7 @@ from fastapi.responses import RedirectResponse
 
 from server.config import get_config
 from .. import auth as reader_auth
-from ._common import templates, _reader_auth_enabled
+from ._common import templates, _reader_auth_enabled, url_path
 
 router = APIRouter(tags=["reader"])
 
@@ -16,11 +16,11 @@ router = APIRouter(tags=["reader"])
 def reader_login_get(request: Request, next: str = ""):
     """Login page; redirect to library if already authenticated or auth disabled."""
     if not _reader_auth_enabled():
-        return RedirectResponse(url=request.url_for("browse_root"), status_code=302)
+        return RedirectResponse(url=url_path(request, "browse_root"), status_code=302)
     cookie = request.cookies.get(reader_auth.SESSION_COOKIE_NAME)
     config = get_config()
     if reader_auth.verify_session_cookie(cookie, config.reader_auth.password):
-        target = next.strip() or request.url_for("browse_root")
+        target = next.strip() or url_path(request, "browse_root")
         return RedirectResponse(url=target, status_code=302)
     return _login_template(request, next=next or "")
 
@@ -35,7 +35,7 @@ def reader_login_post(
     """Validate credentials and set session cookie on success."""
     config = get_config()
     if not config.reader_auth.enabled:
-        return RedirectResponse(url=request.url_for("browse_root"), status_code=302)
+        return RedirectResponse(url=url_path(request, "browse_root"), status_code=302)
     if username != config.reader_auth.user or password != config.reader_auth.password:
         return _login_template(request, error="Invalid username or password.", next=next)
     cookie_value = reader_auth.create_session_cookie_value(
@@ -45,7 +45,7 @@ def reader_login_post(
     if next_path.startswith("/reader"):
         target = next_path
     else:
-        target = request.url_for("browse_root")
+        target = url_path(request, "browse_root")
     response = RedirectResponse(url=target, status_code=302)
     response.set_cookie(
         key=reader_auth.SESSION_COOKIE_NAME,
@@ -73,7 +73,10 @@ def _login_template(request: Request, error: str | None = None, next: str = ""):
 @router.post("/logout", include_in_schema=False)
 def reader_logout(request: Request):
     """Clear session cookie and redirect to login."""
-    response = RedirectResponse(url=request.url_for("reader_login_get"), status_code=302)
+    response = RedirectResponse(
+        url=url_path(request, "reader_login_get"),
+        status_code=302,
+    )
     response.delete_cookie(
         key=reader_auth.SESSION_COOKIE_NAME,
         path="/reader",

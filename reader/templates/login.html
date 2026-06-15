@@ -7,14 +7,14 @@
   <meta name="theme-color" content="#7c3aed">
   <title>Login — {{ title }}</title>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <link rel="icon" type="image/svg+xml" href="{{ request.url_for('reader_static', path='/img/favicon.svg') }}">
-  <link rel="stylesheet" href="{{ request.url_for('reader_static', path='/css/style.css') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_path(request, 'reader_static', path='/img/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_path(request, 'reader_static', path='/css/style.css') }}">
 </head>
 
 <body
   class="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 text-gray-900 antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] flex flex-col items-center justify-center px-4">
   <div class="w-full max-w-sm">
-    <a href="{{ request.url_for('browse_root') }}"
+    <a href="{{ url_path(request, 'browse_root') }}"
       class="font-mono block text-center no-underline touch-manipulation hover:opacity-80 transition-all mb-8" title="Library">
       <pre
         class="m-0 whitespace-pre text-[0.5rem] leading-tight sm:text-[0.6rem] bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"> __     ______     ______     __  __     ______     _____    
@@ -28,7 +28,7 @@
       {% if error %}
       <p class="mb-3 text-center text-sm text-red-600">{{ error }}</p>
       {% endif %}
-      <form action="{{ request.url_for('reader_login_post') }}" method="post" class="flex flex-col gap-4">
+      <form action="{{ url_path(request, 'reader_login_post') }}" method="post" class="flex flex-col gap-4">
         <input type="hidden" name="next" value="{{ next or '' }}">
         <div>
           <label for="username" class="mb-1 block text-sm font-medium text-gray-700">Username</label>

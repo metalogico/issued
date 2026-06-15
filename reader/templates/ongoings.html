@@ -26,15 +26,15 @@
         {% for row in ongoing_rows %}
         <tr class="transition-colors hover:bg-violet-50/60">
           <td class="py-3 pl-4 pr-3">
-            <a href="{{ request.url_for('browse_folder', folder_id=row.folder_id) }}"
+            <a href="{{ url_path(request, 'browse_folder', folder_id=row.folder_id) }}"
               class="font-semibold text-violet-700 hover:text-violet-900">{{ row.folder_name }}</a>
           </td>
           <td class="py-3 pr-3 text-center text-gray-800">{{ row.issue_count }}</td>
           <td class="py-3 pr-3 text-gray-700">
             {% if row.last_comic_uuid %}
-            <a href="{{ request.url_for('reader_view', comic_uuid=(row.last_issue_uuid or row.last_comic_uuid)) }}"
+            <a href="{{ url_path(request, 'reader_view', comic_uuid=(row.last_issue_uuid or row.last_comic_uuid)) }}"
               class="flex items-center gap-3 text-violet-600 hover:text-violet-800">
-              <img src="{{ request.url_for('get_thumbnail', comic_uuid=row.last_comic_uuid) }}" alt=""
+              <img src="{{ url_path(request, 'get_thumbnail', comic_uuid=row.last_comic_uuid) }}" alt=""
                 class="h-12 w-8 shrink-0 rounded object-cover shadow-sm" loading="lazy">
               <span>
                 {% set issue_num = row.get('last_added_issue_number') %}

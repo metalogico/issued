@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
 from server.config import get_config
@@ -22,6 +23,14 @@ TEMPLATES_DIR = _base / "templates"
 STATIC_DIR = _base / "static"
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+
+def url_path(request: Request, route_name: str, **path_params) -> str:
+    """Build an application route without coupling it to the request host."""
+    return request.url_for(route_name, **path_params).path
+
+
+templates.env.globals["url_path"] = url_path
 
 
 def _library_title() -> str:

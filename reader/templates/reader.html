@@ -89,7 +89,7 @@
     role="img" aria-label="Comic page – tap left for previous, right for next">
     <div id="reader-spinner" class="reader-spinner" aria-label="Loading page"></div>
     <div id="reader-pages" class="reader-pages">
-      <img id="reader-image" src="{{ request.url_for('api_comic_page', comic_uuid=comic_uuid, page_num=initial_page) }}"
+      <img id="reader-image" src="{{ url_path(request, 'api_comic_page', comic_uuid=comic_uuid, page_num=initial_page) }}"
         alt="Page {{ initial_page }}"
         class="max-h-[75dvh] max-w-full rounded-lg shadow-2xl transition-opacity duration-300 select-none pointer-events-none sm:max-h-[80vh]"
         draggable="false">
@@ -141,7 +141,7 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="{{ request.url_for('reader_static', path='/js/reader.js') }}"></script>
+<script src="{{ url_path(request, 'reader_static', path='/js/reader.js') }}"></script>
 <script>
   (function () {
     const comicUuid = document.querySelector('.reader[data-comic-uuid]')?.dataset.comicUuid;

@@ -309,6 +309,38 @@ user =                   # Leave empty for no password
 password =               # Leave empty for no password
 ```
 
+### Reverse proxy
+
+Issued keeps its two public route prefixes when served through a reverse proxy:
+
+- Web reader: `https://issued.example.com/reader/`
+- OPDS catalog: `https://issued.example.com/opds/`
+
+Do not strip or rewrite `/reader` or `/opds`. For example, with nginx:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name issued.example.com;
+
+    location / {
+        proxy_pass http://issued:8181;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+Reader assets and images use origin-relative URLs, so they work with either an
+IP address or a domain. OPDS clients require absolute URLs; forwarding `Host`
+and `X-Forwarded-Proto` ensures those URLs contain the public domain and
+protocol.
+
+When nginx, Caddy, Traefik, or another proxy runs in a separate container, add
+`FORWARDED_ALLOW_IPS=*` to the Issued container environment, or replace `*`
+with the proxy network/IP range. This lets Uvicorn trust the forwarded protocol.
+
 ## Troubleshooting
 
 ### Comics not showing up

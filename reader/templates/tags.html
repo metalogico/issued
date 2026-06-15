@@ -14,7 +14,7 @@
   <ul class="flex flex-wrap gap-3" id="tags-list">
     {% for row in tag_rows %}
     <li id="tag-item-{{ row.name | urlencode }}" class="group flex items-center gap-0">
-      <a href="{{ request.url_for('browse_tag', tag_name=row.name) }}"
+      <a href="{{ url_path(request, 'browse_tag', tag_name=row.name) }}"
         class="inline-flex items-center gap-2 rounded-l-full border border-r-0 border-violet-200 bg-white pl-4 pr-3 py-2 text-sm font-medium text-violet-700 shadow-sm transition hover:bg-violet-50">
         <i data-lucide="tag" class="h-3.5 w-3.5 shrink-0 text-violet-400"></i>
         {{ row.name }}

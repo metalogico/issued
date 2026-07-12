@@ -4,7 +4,7 @@
   <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
     {% for f in folders %}
     <li class="flex">
-      <a href="{{ request.url_for('browse_folder', folder_id=f.id) }}"
+      <a href="{{ url_path(request, 'browse_folder', folder_id=f.id) }}"
         class="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
         data-folder-id="{{ f.id }}">
         <div

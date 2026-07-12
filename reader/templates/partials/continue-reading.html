@@ -20,7 +20,7 @@
             <i data-lucide="x" class="h-[14px] w-[14px]"></i>
           </button>
 
-          <a href="{{ request.url_for('reader_view', comic_uuid=c.uuid) }}"
+          <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}"
             class="block w-full overflow-hidden rounded-2xl shadow-lg transition-all hover:-translate-y-1 bg-white relative z-0">
             <div class="relative">
               {% if c.get('is_completed') %}
@@ -30,7 +30,7 @@
                 <i data-lucide="check" class="h-[14px] w-[14px]"></i>
               </span>
               {% endif %}
-              <img src="{{ request.url_for('get_thumbnail', comic_uuid=c.uuid) }}" alt=""
+              <img src="{{ url_path(request, 'get_thumbnail', comic_uuid=c.uuid) }}" alt=""
                 class="aspect-[2/3] w-full object-cover" loading="lazy">
               <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
               {% if c.get('current_page') %}

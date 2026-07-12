@@ -17,7 +17,7 @@
       <i data-lucide="bookmark" class="h-4 w-4"></i>
       Ongoing
     </button>
-    <span class="text-xs text-gray-500">Track this series on the <a href="{{ request.url_for('browse_ongoings') }}"
+    <span class="text-xs text-gray-500">Track this series on the <a href="{{ url_path(request, 'browse_ongoings') }}"
         class="font-medium text-violet-600 hover:text-violet-800">Ongoing</a> page.</span>
   </div>
   {% endif %}
@@ -44,7 +44,7 @@
 {% include 'partials/info-panel.html' %}
 {% endblock %}
 {% block scripts %}
-<script src="{{ request.url_for('reader_static', path='/js/folder-preview.js') }}"></script>
+<script src="{{ url_path(request, 'reader_static', path='/js/folder-preview.js') }}"></script>
 {% include 'partials/tag-editor.html' %}
-<script src="{{ request.url_for('reader_static', path='/js/browser.js') }}"></script>
+<script src="{{ url_path(request, 'reader_static', path='/js/browser.js') }}"></script>
 {% endblock %}

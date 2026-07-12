@@ -61,6 +61,8 @@ def _comic_media_type(fmt: str) -> str:
         return "application/x-cbz"
     if fmt_lower == "cbr":
         return "application/x-cbr"
+    if fmt_lower == "cb7":
+        return "application/x-7z-compressed"
     if fmt_lower == "pdf":
         return "application/pdf"
     return "application/octet-stream"

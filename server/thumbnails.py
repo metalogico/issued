@@ -1,6 +1,6 @@
 """Thumbnail generation for Issued.
 
-Generates WebP thumbnails from the first page of CBZ/CBR/PDF comic files,
+Generates WebP thumbnails from the first page of CBZ/CBR/CB7/PDF comic files,
 storing them under `thumbnails/{comic_uuid}.webp`.
 """
 
@@ -178,4 +178,3 @@ def generate_thumbnails(config: IssuedConfig, regenerate: bool = False) -> None:
                 repo.commit()
 
         logger.info("Thumbnail generation complete.")
-

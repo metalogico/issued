@@ -118,7 +118,7 @@ def parse_comicinfo_xml(xml_bytes: bytes) -> ComicInfoParsed:
 
 
 def read_comicinfo_from_archive(archive_path: Path) -> Optional[ComicInfoParsed]:
-    """Read ComicInfo.xml from a comic file (CBZ/CBR/PDF) and return parsed model, or None.
+    """Read ComicInfo.xml from a comic file (CBZ/CBR/CB7/PDF) and return parsed model, or None.
 
     For PDF files, the ComicInfo.xml is generated from PDF metadata properties.
     """

@@ -28,7 +28,7 @@ quality = ${THUMB_QUALITY:-85}
 format = ${THUMB_FORMAT:-jpeg}
 
 [scanner]
-supported_formats = cbz,cbr
+supported_formats = cbz,cbr,cb7,pdf
 ignore_patterns = .DS_Store,Thumbs.db,@eaDir
 
 [monitoring]

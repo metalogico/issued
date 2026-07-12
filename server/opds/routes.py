@@ -338,7 +338,13 @@ def download_comic(comic_uuid: str):
         raise HTTPException(status_code=404, detail="File missing on disk")
 
     media_type = _comic_media_type(comic["format"])
-    return FileResponse(path, media_type=media_type, filename=path.name)
+    detected_suffix = f".{comic['format'].lower()}"
+    download_name = (
+        path.name
+        if path.suffix.lower() == detected_suffix
+        else f"{path.stem}{detected_suffix}"
+    )
+    return FileResponse(path, media_type=media_type, filename=download_name)
 
 
 @router.get("/opds/comic/{comic_uuid}/thumbnail")

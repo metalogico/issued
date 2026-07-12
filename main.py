@@ -29,7 +29,7 @@ from server.models import Folder
 from server.logging_config import setup_logging
 
 
-__version__ = "0.1.0"
+__version__ = "0.1.8"
 
 app = typer.Typer(add_completion=False, help="Issued comic library CLI")
 logger = logging.getLogger("issued")
@@ -71,7 +71,7 @@ def _write_config(config_path: Path, library_path: Path, library_name: str) -> N
         "format": "jpeg",
     }
     parser["scanner"] = {
-        "supported_formats": "cbz,cbr",
+        "supported_formats": "cbz,cbr,cb7,pdf",
         "ignore_patterns": ".DS_Store,Thumbs.db,@eaDir",
         "unrar_tool": "unrar",
     }

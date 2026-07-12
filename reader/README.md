@@ -2,7 +2,7 @@
 
 Simple web UI for browsing and reading comics from the Issued library.
 
-Supports CBZ, CBR, and PDF formats with automatic page extraction and rendering.
+Supports CBZ, CBR, CB7, and PDF formats with automatic page extraction and rendering.
 
 ## Structure
 

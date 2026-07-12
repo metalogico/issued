@@ -22,13 +22,14 @@ from .logging_config import get_logger
 from .repository import Repository
 from .thumbnails import generate_thumbnail_for_comic
 from .comicinfo import read_comicinfo_from_archive, ComicMetadataUpdate
+from .archive import ComicFormat, detect_archive_format, get_archive
 from .utils import delete_thumbnails, short_path
 from sqlmodel import Session
 
 logger = get_logger(__name__)
 
 
-COMIC_EXTENSIONS = {".cbz", ".cbr", ".pdf"}
+COMIC_EXTENSIONS = {".cbz", ".cbr", ".cb7", ".pdf"}
 
 
 def _natural_sort_key(value: str) -> list[object]:
@@ -86,20 +87,28 @@ def walk_library(
         yield dir_path, comic_files
 
 
-def validate_and_count_pages(path: Path) -> int:
+def validate_and_count_pages(
+    path: Path,
+    detected_format: ComicFormat | None = None,
+) -> int:
     """Validate archive integrity and return page count.
 
     Raises Exception (e.g. BadZipFile) if archive is corrupt.
     """
-    from .archive import get_archive
-
     # Let get_archive raise exceptions if file is bad/corrupt
-    with get_archive(path) as archive:
+    with get_archive(path, detected_format=detected_format) as archive:
         images = archive.list_images()
+        if not images:
+            raise ValueError(f"No supported images found in {path.name}")
         return len(images)
 
 
-def _should_skip_comic(comic_in_db, file_mtime: datetime, force: bool) -> bool:
+def _should_skip_comic(
+    comic_in_db,
+    file_mtime: datetime,
+    force: bool,
+    detected_format: ComicFormat,
+) -> bool:
     """Check if comic should be skipped based on mtime and metadata presence.
     
     Skip if:
@@ -122,6 +131,11 @@ def _should_skip_comic(comic_in_db, file_mtime: datetime, force: bool) -> bool:
     
     # If mtime changed, don't skip (file was modified)
     if comic_in_db.file_modified_at != file_mtime:
+        return False
+
+    # Normalize legacy records whose extension-based value differs from the
+    # actual container, even when the file itself has not changed.
+    if comic_in_db.format != detected_format.value:
         return False
     
     # If no metadata row exists, don't skip (first-time processing)
@@ -156,12 +170,25 @@ def process_comic(
     comic_in_db = repo.get_comic_by_path(comic_path)
     existing = comic_in_db is not None
 
-    if _should_skip_comic(comic_in_db, file_mtime, force):
+    try:
+        detected_format = detect_archive_format(comic_path)
+    except Exception as exc:
+        logger.error(f"✗ {comic_path.name} - CORRUPT: {exc}")
+
+        if existing:
+            deleted_uuids = repo.delete_comic_by_path(comic_path)
+            repo.commit()
+            if deleted_uuids:
+                delete_thumbnails(deleted_uuids, config.thumbnails_dir)
+
+        return None, existing, True, False
+
+    if _should_skip_comic(comic_in_db, file_mtime, force, detected_format):
         return None, existing, True, False
 
     # Validate and count pages
     try:
-        page_count = validate_and_count_pages(comic_path)
+        page_count = validate_and_count_pages(comic_path, detected_format)
     except Exception as exc:
         logger.error(f"✗ {comic_path.name} - CORRUPT: {exc}")
         
@@ -174,7 +201,7 @@ def process_comic(
         return None, existing, True, False
 
     # Process comic
-    fmt = comic_path.suffix.lower().lstrip(".")
+    fmt = detected_format.value
 
     # Use existing thumbnail status if updating, else False
     thumb_gen = comic_in_db.thumbnail_generated if comic_in_db else False
@@ -453,4 +480,3 @@ def scan_library(
         repo.commit()
 
     return stats
-

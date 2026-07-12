@@ -1,7 +1,7 @@
 """Archive handling utilities for Issued.
 
-Provides a unified interface for reading CBZ (Zip) and CBR (Rar) archives,
-with robust error handling and format fallback detection.
+Provides a unified interface for reading CBZ (Zip), CBR (Rar), CB7 (7-Zip),
+and PDF comics, with content-based format detection.
 """
 
 from __future__ import annotations
@@ -11,6 +11,8 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
+from enum import StrEnum
+from io import BytesIO
 from pathlib import Path
 from typing import Optional, Protocol, List
 
@@ -24,10 +26,83 @@ try:
 except ImportError:
     fitz = None
 
+try:
+    import py7zr
+    from py7zr import Py7zIO, WriterFactory
+except ImportError:
+    py7zr = None
+    Py7zIO = object  # type: ignore[assignment,misc]
+    WriterFactory = object  # type: ignore[assignment,misc]
+
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 PDF_RENDER_DPI = 150  # DPI for rendering PDF pages to images
 PDF_MAX_CACHE_PAGES = 50  # Max pages to keep rendered in memory per session
+
+
+class ComicFormat(StrEnum):
+    """Supported comic container formats, independent of file extension."""
+
+    CBZ = "cbz"
+    CBR = "cbr"
+    CB7 = "cb7"
+    PDF = "pdf"
+
+
+ZIP_MAGIC_HEADERS = (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08")
+RAR4_MAGIC_HEADER = b"Rar!\x1a\x07\x00"
+RAR5_MAGIC_HEADER = b"Rar!\x1a\x07\x01\x00"
+SEVEN_ZIP_MAGIC_HEADER = b"7z\xbc\xaf\x27\x1c"
+PDF_MAGIC_HEADER = b"%PDF-"
+MAX_MAGIC_HEADER_LENGTH = max(
+    *(len(header) for header in ZIP_MAGIC_HEADERS),
+    len(RAR4_MAGIC_HEADER),
+    len(RAR5_MAGIC_HEADER),
+    len(SEVEN_ZIP_MAGIC_HEADER),
+    len(PDF_MAGIC_HEADER),
+)
+
+
+def detect_format_from_header(header: bytes) -> ComicFormat | None:
+    """Return the comic format identified by *header*, or ``None``.
+
+    This pure helper intentionally does not consider the file extension so it
+    can be tested independently and cannot misclassify renamed archives.
+    """
+    if any(header.startswith(signature) for signature in ZIP_MAGIC_HEADERS):
+        return ComicFormat.CBZ
+    if header.startswith(RAR5_MAGIC_HEADER) or header.startswith(RAR4_MAGIC_HEADER):
+        return ComicFormat.CBR
+    if header.startswith(SEVEN_ZIP_MAGIC_HEADER):
+        return ComicFormat.CB7
+    if header.startswith(PDF_MAGIC_HEADER):
+        return ComicFormat.PDF
+    return None
+
+
+def detect_archive_format(path: Path) -> ComicFormat:
+    """Detect an archive's real format from its magic header."""
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {path}")
+    if not path.is_file():
+        raise ValueError(f"Not a file: {path}")
+
+    try:
+        with path.open("rb") as handle:
+            header = handle.read(MAX_MAGIC_HEADER_LENGTH)
+    except PermissionError:
+        raise
+    except OSError as exc:
+        raise ValueError(f"Cannot read {path.name}: {exc}") from exc
+
+    detected = detect_format_from_header(header)
+    if detected is None:
+        suffix = path.suffix.lower() or "<none>"
+        raise ValueError(
+            f"Unsupported or corrupt comic container in {path.name} "
+            f"(extension {suffix}, unrecognized magic header)"
+        )
+    return detected
 
 
 def is_image(filename: str) -> bool:
@@ -144,6 +219,93 @@ class RarArchiveWrapper:
         self.rf.close()
 
     def __enter__(self) -> "RarArchiveWrapper":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
+
+
+class _MemorySevenZipFile(Py7zIO):  # type: ignore[misc]
+    """In-memory extraction target used by py7zr's WriterFactory API."""
+
+    def __init__(self) -> None:
+        self._buffer = BytesIO()
+
+    def write(self, data: bytes | bytearray) -> int:
+        return self._buffer.write(data)
+
+    def read(self, size: Optional[int] = None) -> bytes:
+        return self._buffer.read(-1 if size is None else size)
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        return self._buffer.seek(offset, whence)
+
+    def flush(self) -> None:
+        return None
+
+    def size(self) -> int:
+        return self._buffer.getbuffer().nbytes
+
+    def getvalue(self) -> bytes:
+        return self._buffer.getvalue()
+
+
+class _MemorySevenZipFactory(WriterFactory):  # type: ignore[misc]
+    def __init__(self) -> None:
+        self.products: dict[str, _MemorySevenZipFile] = {}
+
+    def create(self, filename: str) -> _MemorySevenZipFile:
+        product = _MemorySevenZipFile()
+        self.products[filename] = product
+        return product
+
+
+class SevenZipArchiveWrapper:
+    """7-Zip archive adapter implementing the common ``Archive`` protocol."""
+
+    def __init__(self, path: Path):
+        if py7zr is None:
+            raise ImportError("py7zr module not installed")
+        self._path = Path(path)
+        try:
+            self.sz = py7zr.SevenZipFile(path, mode="r")
+            if self.sz.needs_password():
+                self.sz.close()
+                raise ValueError(f"Password-protected CB7 archive: {path.name}")
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise ValueError(f"Cannot open CB7 archive {path.name}: {exc}") from exc
+
+    def list_images(self) -> List[str]:
+        return [name for name in self.sz.getnames() if is_image(name)]
+
+    def list_names(self) -> List[str]:
+        return self.sz.getnames()
+
+    def read(self, filename: str) -> bytes:
+        if filename not in self.sz.getnames():
+            raise KeyError(f"Member {filename!r} not found in {self._path.name}")
+
+        try:
+            self.sz.reset()
+            factory = _MemorySevenZipFactory()
+            self.sz.extract(targets=[filename], factory=factory)
+            product = factory.products.get(filename)
+            if product is None:
+                raise KeyError(f"Member {filename!r} was not extracted")
+            return product.getvalue()
+        except KeyError:
+            raise
+        except Exception as exc:
+            raise IOError(
+                f"Failed to read {filename!r} from {self._path.name}: {exc}"
+            ) from exc
+
+    def close(self) -> None:
+        self.sz.close()
+
+    def __enter__(self) -> "SevenZipArchiveWrapper":
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -268,39 +430,24 @@ def configure_rar_tool(tool_path: str) -> None:
         rarfile.UNRAR_TOOL = tool_path
 
 
-def get_archive(path: Path) -> Archive:
-    """Open a comic book file (archive or PDF), detecting format by extension.
-
-    Tries the expected format first (cbz→zip, cbr→rar, pdf→book).
-    If that fails for cbz/cbr, tries the other format (handles misnamed files).
-    """
-    if not path.exists():
-        raise FileNotFoundError(f"File not found: {path}")
-
-    suffix = path.suffix.lower()
-
-    # PDF: direct book wrapper, no fallback needed
-    if suffix == ".pdf":
-        return PdfBookWrapper(path)
-
-    # Existing CBZ/CBR logic with fallback
-    if suffix == ".cbz":
-        primary, fallback = ZipArchiveWrapper, RarArchiveWrapper
-    elif suffix == ".cbr":
-        primary, fallback = RarArchiveWrapper, ZipArchiveWrapper
-    else:
-        raise ValueError(f"Unsupported archive format: {suffix}")
-
-    primary_exc: Optional[Exception] = None
+def get_archive(
+    path: Path,
+    detected_format: ComicFormat | None = None,
+) -> Archive:
+    """Open a comic using its content signature, never its extension."""
+    comic_format = detected_format or detect_archive_format(path)
+    wrappers = {
+        ComicFormat.CBZ: ZipArchiveWrapper,
+        ComicFormat.CBR: RarArchiveWrapper,
+        ComicFormat.CB7: SevenZipArchiveWrapper,
+        ComicFormat.PDF: PdfBookWrapper,
+    }
+    wrapper = wrappers[comic_format]
     try:
-        return primary(path)
+        return wrapper(path)
+    except (FileNotFoundError, ImportError, PermissionError, ValueError):
+        raise
     except Exception as exc:
-        primary_exc = exc
-
-    try:
-        return fallback(path)
-    except Exception as fallback_exc:
         raise ValueError(
-            f"Cannot open {path.name} as {primary.__name__} ({primary_exc}) "
-            f"or {fallback.__name__} ({fallback_exc})"
-        ) from fallback_exc
+            f"Cannot open {path.name} as {comic_format.value}: {exc}"
+        ) from exc

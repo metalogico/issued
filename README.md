@@ -2,7 +2,7 @@
 
 **Your personal comic library server**
 
-Host your digital comics (CBZ/CBR/PDF files) on your home server and read them on any device. Issued automatically organizes your collection and makes it available through mobile apps like Panels, Chunky, or a built-in web reader.
+Host your digital comics (CBZ/CBR/CB7/PDF files) on your home server and read them on any device. Issued automatically organizes your collection and makes it available through mobile apps like Panels, Chunky, or a built-in web reader.
 
 ## What You Get
 
@@ -20,7 +20,11 @@ Issued works with all common digital comic formats:
 
 - **CBZ** (Comic Book ZIP) - ZIP archives containing images
 - **CBR** (Comic Book RAR) - RAR archives containing images (requires `unrar`)
+- **CB7** (Comic Book 7-Zip) - 7-Zip archives containing images
 - **PDF** - PDF documents with comic pages
+
+Issued detects the real container from the file contents. Misnamed archives, such
+as a `.cbz` file that is actually compressed with 7-Zip, are handled automatically.
 
 All formats support:
 - ✅ Automatic page extraction and rendering
@@ -57,7 +61,7 @@ Install `unrar` on your computer:
 - **Linux**: `sudo apt install rar`
 - **Windows**: Download from [rarlab.com](https://www.rarlab.com/rar_add.htm)
 
-> **Note:** CBZ and PDF files work without any extra software. CBR files need `unrar` to extract.
+> **Note:** CBZ, CB7, and PDF files work without any extra software. CBR files need `unrar` to extract.
 
 ## Installation
 
@@ -172,7 +176,7 @@ Examples:
 ```
 
 This will:
-- Find all CBZ/CBR/PDF files
+- Find all CBZ/CBR/CB7/PDF files
 - Create thumbnails
 - Build the library database
 

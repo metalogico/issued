@@ -68,7 +68,7 @@ def test_pdf_corrupted(tmp_path):
     bad_pdf = tmp_path / "bad.pdf"
     bad_pdf.write_bytes(b"Not a PDF")
 
-    with pytest.raises(ValueError, match="Cannot open PDF"):
+    with pytest.raises(ValueError, match="Unsupported or corrupt comic container"):
         with get_archive(bad_pdf) as archive:
             pass
 

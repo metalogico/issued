@@ -13,6 +13,7 @@ from server.database import init_db
 from server.opds import app
 from server.repository import Repository
 from server.models import Comic, Folder
+from server.opds.feeds import _comic_media_type
 
 
 @pytest.fixture
@@ -49,6 +50,7 @@ def client(test_config, test_db, monkeypatch):
     """Create a test client."""
     # Mock get_config to return our test config
     monkeypatch.setattr("server.opds.get_config", lambda: test_config)
+    monkeypatch.setattr("server.opds.routes.get_config", lambda: test_config)
     
     return TestClient(app)
 
@@ -124,3 +126,36 @@ def test_opds_recent_endpoint_returns_xml(client):
     root = ET.fromstring(response.content)
     assert root.tag.endswith("feed")
 
+
+def test_cb7_media_type():
+    assert _comic_media_type("cb7") == "application/x-7z-compressed"
+
+
+def test_misnamed_cb7_download_uses_real_format(client, test_db, test_config):
+    comic_path = test_config.library_path / "misnamed.cbz"
+    payload = b"7z\xbc\xaf\x27\x1carchive-data"
+    comic_path.write_bytes(payload)
+
+    with Session(test_db) as session:
+        repo = Repository(session, test_config.library_path)
+        folder = repo.get_or_create_folder(test_config.library_path)
+        comic = Comic(
+            filename=comic_path.name,
+            path=comic_path.name,
+            format="cb7",
+            file_size=len(payload),
+            page_count=1,
+            file_modified_at=datetime.now(),
+            folder_id=folder.id,
+        )
+        session.add(comic)
+        session.commit()
+        session.refresh(comic)
+        comic_uuid = comic.uuid
+
+    response = client.get(f"/opds/comic/{comic_uuid}/file")
+
+    assert response.status_code == 200
+    assert response.content == payload
+    assert response.headers["content-type"] == "application/x-7z-compressed"
+    assert 'filename="misnamed.cb7"' in response.headers["content-disposition"]

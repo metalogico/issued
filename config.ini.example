@@ -13,7 +13,7 @@ quality = 85
 format = jpeg
 
 [scanner]
-supported_formats = cbz,cbr
+supported_formats = cbz,cbr,cb7,pdf
 ignore_patterns = .DS_Store,Thumbs.db,@eaDir
 unrar_tool = unrar
 
@@ -27,4 +27,3 @@ debounce_seconds = 2
 # Web reader login (leave empty to allow access without password)
 user =
 password =
-

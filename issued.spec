@@ -1,5 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_submodules
+
 block_cipher = None
 
 a = Analysis(
@@ -13,10 +15,9 @@ a = Analysis(
         ('alembic.ini', '.'),
         ('migrations', 'migrations'),
     ],
-    hiddenimports=[
+    hiddenimports=collect_submodules('py7zr') + [
         'jinja2',
         'reader',
-        'reader.router',
         'reader.routes',
         'reader.routes.auth',
         'reader.routes.browse',
@@ -25,7 +26,6 @@ a = Analysis(
         'reader.routes.api_library',
         'reader.routes._common',
         'reader.services',
-        'reader.repository',
         'reader.repo',
         'reader.repo.folders',
         'reader.repo.comics',
@@ -51,7 +51,6 @@ a = Analysis(
         'server.monitor',
         'server.models',
         'server.utils',
-        'server.db_utils',
         'server.migrations',
         'uvicorn.logging',
         'uvicorn.loops',

@@ -1,6 +1,7 @@
 """Reader services: comic lookup and page image extraction.
 
 Uses Issued database and archive handling. Keeps reader logic separate from routes.
+Supports CBZ, CBR, CB7, and PDF containers through the shared archive layer.
 Page order: natural sort (1, 2, 3, ..., 10).
 """
 

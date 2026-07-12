@@ -61,7 +61,7 @@ class ThumbnailConfig:
 
 @dataclasses.dataclass
 class ScannerConfig:
-    supported_formats: tuple[str, ...] = ("cbz", "cbr")
+    supported_formats: tuple[str, ...] = ("cbz", "cbr", "cb7", "pdf")
     ignore_patterns: tuple[str, ...] = (".DS_Store", "Thumbs.db", "@eaDir")
     unrar_tool: str = "unrar"
 
@@ -153,7 +153,7 @@ def load_config(config_path: Optional[pathlib.Path] = None) -> IssuedConfig:
         supported_formats=tuple(
             f.strip()
             for f in parser.get(
-                "scanner", "supported_formats", fallback="cbz,cbr"
+                "scanner", "supported_formats", fallback="cbz,cbr,cb7,pdf"
             ).split(",")
             if f.strip()
         ),

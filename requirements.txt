@@ -38,7 +38,7 @@ pytest==9.0.3
 python-multipart==0.0.32
 rarfile==4.2
 rich==15.0.0
-setuptools==82.0.1
+setuptools==83.0.0
 shellingham==1.5.4
 sqlalchemy==2.0.50
 sqlmodel==0.0.38

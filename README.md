@@ -11,6 +11,7 @@ Host your digital comics (CBZ/CBR/CB7/PDF files) on your home server and read th
 - 🖼️ **Thumbnail previews** – See cover images before opening
 - 📱 **Read anywhere** – Use your favorite comic reader app (Panels, Chunky, etc.)
 - 🌐 **Web reader** – Read in your browser without installing anything (on mobile too!)
+- 🌙 **Light and dark themes** – Follow your system preference or switch manually
 - 🔖 **Ongoing series** – Mark active series and quickly see new issues, totals, and possible gaps
 - ⚡ **Easy setup** – One command to get started
 

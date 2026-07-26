@@ -8,6 +8,17 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>{% block title %}Comic Library{% endblock %}</title>
+  <script>
+    (() => {
+      try {
+        const savedTheme = localStorage.getItem('issued-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = savedTheme || (prefersDark ? 'dark' : 'light');
+      } catch (_) {
+        document.documentElement.dataset.theme = 'light';
+      }
+    })();
+  </script>
   <script src="{{ url_path(request, 'reader_static', path='/js/tailwind.js') }}"></script>
   <script src="{{ url_path(request, 'reader_static', path='/js/htmx.min.js') }}"></script>
   <script src="{{ url_path(request, 'reader_static', path='/js/sweetalert2.all.min.js') }}"></script>
@@ -63,6 +74,12 @@
             class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 touch-manipulation">
             <i data-lucide="refresh-cw" class="h-4 w-4"></i>
           </button>
+          <button type="button" id="theme-toggle" title="Switch to dark mode" aria-label="Switch to dark mode"
+            aria-pressed="false"
+            class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 touch-manipulation">
+            <i data-lucide="moon" class="theme-moon h-4 w-4"></i>
+            <i data-lucide="sun" class="theme-sun h-4 w-4"></i>
+          </button>
         </nav>
       </div>
       {% if breadcrumbs %}
@@ -89,6 +106,7 @@
     {% block content %}{% endblock %}
   </main>
   {% block scripts %}{% endblock %}
+  <script src="{{ url_path(request, 'reader_static', path='/js/theme.js') }}"></script>
   <script>lucide.createIcons();</script>
 </body>
 

@@ -83,6 +83,9 @@ def test_reader_root_renders_scan_button(tmp_path, monkeypatch):
 
     assert response.status_code == 200
     assert 'id="scan-library-btn"' in response.text
+    assert 'id="theme-toggle"' in response.text
+    assert 'aria-label="Switch to dark mode"' in response.text
+    assert '/reader/static/js/theme.js' in response.text
 
 
 def test_reader_recent_renders_scan_button(tmp_path, monkeypatch):

@@ -9,10 +9,12 @@ def test_layout_preferences_are_persisted_and_validated():
 
     assert "issued-layout-width" in script
     assert "issued-thumbnail-size" in script
+    assert "issued-borderless-collage" in script
     assert "['fixed', 'full']" in script
     assert "['small', 'medium', 'large']" in script
     assert "localStorage.setItem" in script
     assert "aria-pressed" in script
+    assert "aria-checked" in script
 
 
 def test_layout_styles_support_full_width_and_resizable_cover_grids():
@@ -21,6 +23,9 @@ def test_layout_styles_support_full_width_and_resizable_cover_grids():
     assert 'html[data-layout-width="full"] .layout-container' in styles
     assert 'html[data-thumbnail-size="small"] .cover-grid' in styles
     assert 'html[data-thumbnail-size="large"] .cover-grid' in styles
+    assert 'html[data-borderless="true"] .cover-grid' in styles
+    assert 'html[data-borderless="true"] .comic-card-details' in styles
+    assert 'html[data-borderless="true"] .folder-card-details' in styles
     assert "--cover-min-width" in styles
 
 

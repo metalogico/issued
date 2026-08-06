@@ -163,7 +163,8 @@
                 class="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg pointer-events-auto">Read</span>
             </a>
           </div>
-          <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}" class="block bg-white p-3">
+          <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}"
+            class="comic-card-details block bg-white p-3">
             <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.filename }}</span>
             {% if c.get('page_count') and c.page_count > 0 %}
             <span class="mt-1 block text-center text-xs text-gray-500">{{ c.page_count }} pages</span>
@@ -210,7 +211,8 @@
               class="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg pointer-events-auto">Read</span>
           </a>
         </div>
-        <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}" class="block bg-white p-3">
+        <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}"
+          class="comic-card-details block bg-white p-3">
           <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.filename }}</span>
           {% if c.get('page_count') and c.page_count > 0 %}
           <span class="mt-1 block text-center text-xs text-gray-500">{{ c.page_count }} pages</span>

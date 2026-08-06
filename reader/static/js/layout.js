@@ -1,6 +1,7 @@
 (() => {
   const widthStorageKey = 'issued-layout-width';
   const sizeStorageKey = 'issued-thumbnail-size';
+  const borderlessStorageKey = 'issued-borderless-collage';
   const validWidths = ['fixed', 'full'];
   const validSizes = ['small', 'medium', 'large'];
   const root = document.documentElement;
@@ -9,6 +10,7 @@
   const sizeLabel = document.getElementById('thumbnail-size-label');
   const decreaseButton = document.getElementById('thumbnail-size-decrease');
   const increaseButton = document.getElementById('thumbnail-size-increase');
+  const borderlessToggle = document.getElementById('borderless-collage-toggle');
 
   const persist = (key, value) => {
     try {
@@ -35,8 +37,16 @@
     if (shouldPersist) persist(sizeStorageKey, normalizedSize);
   };
 
+  const applyBorderless = (enabled, shouldPersist = false) => {
+    const isEnabled = enabled === true || enabled === 'true';
+    root.dataset.borderless = String(isEnabled);
+    borderlessToggle?.setAttribute('aria-checked', String(isEnabled));
+    if (shouldPersist) persist(borderlessStorageKey, String(isEnabled));
+  };
+
   applyWidth(root.dataset.layoutWidth);
   applySize(root.dataset.thumbnailSize);
+  applyBorderless(root.dataset.borderless);
 
   if (!toggle || !panel) return;
 
@@ -63,6 +73,10 @@
   increaseButton?.addEventListener('click', () => {
     const currentIndex = validSizes.indexOf(root.dataset.thumbnailSize);
     applySize(validSizes[Math.min(validSizes.length - 1, currentIndex + 1)], true);
+  });
+
+  borderlessToggle?.addEventListener('click', () => {
+    applyBorderless(root.dataset.borderless !== 'true', true);
   });
 
   document.addEventListener('click', (event) => {

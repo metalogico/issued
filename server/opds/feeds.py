@@ -31,6 +31,34 @@ def _comic_thumb_href(comic_uuid: str) -> str:
     return f"/opds/comic/{comic_uuid}/thumbnail"
 
 
+def _folder_entry_xml(
+    folder_id: int,
+    title: str,
+    updated_ts: str,
+    base_url: str,
+    *,
+    thumbnail_uuid: Optional[str] = None,
+) -> str:
+    """Build a navigation entry with optional artwork for capable OPDS clients."""
+    thumbnail_link = ""
+    if thumbnail_uuid:
+        thumbnail_link = (
+            '\n    <link rel="http://opds-spec.org/image/thumbnail"'
+            f' href="{_absolute_href(base_url, _comic_thumb_href(thumbnail_uuid))}"'
+            ' type="image/webp" />'
+        )
+
+    return f"""
+  <entry>
+    <title>{_escape_xml(title)}</title>
+    <id>urn:folder:{folder_id}</id>
+    <updated>{updated_ts}</updated>{thumbnail_link}
+    <link rel="subsection"
+          href="{_absolute_href(base_url, _folder_href(folder_id))}"
+          type="application/atom+xml;profile=opds-catalog" />
+  </entry>"""
+
+
 def _recent_href(limit: int) -> str:
     return f"/opds/recent?limit={limit}"
 

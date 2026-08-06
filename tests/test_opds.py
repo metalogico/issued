@@ -80,6 +80,61 @@ def test_opds_root_has_required_elements(client):
     assert root.find('atom:updated', ns) is not None
 
 
+def test_opds_folder_entries_include_nested_comic_thumbnail(client, test_db):
+    """Navigation folders expose a representative cover from their subtree."""
+    with Session(test_db) as session:
+        library = Folder(name="Comics", path=".")
+        session.add(library)
+        session.commit()
+        session.refresh(library)
+
+        series = Folder(name="Example Series", path="Example Series", parent_id=library.id)
+        session.add(series)
+        session.commit()
+        session.refresh(series)
+        library_id = library.id
+
+        session.add(
+            Comic(
+                uuid="folder-preview-comic",
+                filename="Issue 1.cbz",
+                path="Example Series/Issue 1.cbz",
+                format="cbz",
+                file_size=100,
+                page_count=12,
+                file_modified_at=datetime.now(),
+                last_scanned_at=datetime.now(),
+                folder_id=series.id,
+            )
+        )
+        session.commit()
+
+    ns = {'atom': 'http://www.w3.org/2005/Atom'}
+    expected_href = "http://testserver/opds/comic/folder-preview-comic/thumbnail"
+
+    root_response = client.get("/opds/")
+    root_entry = ET.fromstring(root_response.content).find('atom:entry', ns)
+    root_thumbnail = root_entry.find(
+        "atom:link[@rel='http://opds-spec.org/image/thumbnail']",
+        ns,
+    )
+    assert root_thumbnail is not None
+    assert root_thumbnail.attrib == {
+        "rel": "http://opds-spec.org/image/thumbnail",
+        "href": expected_href,
+        "type": "image/webp",
+    }
+
+    folder_response = client.get(f"/opds/folder/{library_id}")
+    folder_entry = ET.fromstring(folder_response.content).find('atom:entry', ns)
+    folder_thumbnail = folder_entry.find(
+        "atom:link[@rel='http://opds-spec.org/image/thumbnail']",
+        ns,
+    )
+    assert folder_thumbnail is not None
+    assert folder_thumbnail.attrib["href"] == expected_href
+
+
 def test_opds_search_returns_results(client, test_db, test_config):
     """Test that OPDS search returns results for matching comics."""
     # Add a test comic to the database

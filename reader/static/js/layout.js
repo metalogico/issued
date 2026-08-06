@@ -3,7 +3,16 @@
   const sizeStorageKey = 'issued-thumbnail-size';
   const borderlessStorageKey = 'issued-borderless-collage';
   const validWidths = ['fixed', 'full'];
-  const validSizes = ['small', 'medium', 'large'];
+  const validSizes = ['tiny', 'extra-small', 'small', 'medium', 'large', 'extra-large', 'huge'];
+  const sizeLabels = {
+    tiny: 'Tiny',
+    'extra-small': 'Extra small',
+    small: 'Small',
+    medium: 'Medium',
+    large: 'Large',
+    'extra-large': 'Extra large',
+    huge: 'Huge',
+  };
   const root = document.documentElement;
   const toggle = document.getElementById('display-settings-toggle');
   const panel = document.getElementById('display-settings-panel');
@@ -31,7 +40,7 @@
     const normalizedSize = validSizes.includes(size) ? size : 'medium';
     const sizeIndex = validSizes.indexOf(normalizedSize);
     root.dataset.thumbnailSize = normalizedSize;
-    if (sizeLabel) sizeLabel.textContent = normalizedSize[0].toUpperCase() + normalizedSize.slice(1);
+    if (sizeLabel) sizeLabel.textContent = sizeLabels[normalizedSize];
     if (decreaseButton) decreaseButton.disabled = sizeIndex === 0;
     if (increaseButton) increaseButton.disabled = sizeIndex === validSizes.length - 1;
     if (shouldPersist) persist(sizeStorageKey, normalizedSize);

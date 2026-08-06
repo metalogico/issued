@@ -20,7 +20,9 @@
 
         root.dataset.theme = savedTheme || (prefersDark ? 'dark' : 'light');
         root.dataset.layoutWidth = ['fixed', 'full'].includes(savedLayoutWidth) ? savedLayoutWidth : 'fixed';
-        root.dataset.thumbnailSize = ['small', 'medium', 'large'].includes(savedThumbnailSize)
+        root.dataset.thumbnailSize = [
+          'tiny', 'extra-small', 'small', 'medium', 'large', 'extra-large', 'huge'
+        ].includes(savedThumbnailSize)
           ? savedThumbnailSize
           : 'medium';
         root.dataset.borderless = savedBorderless === 'true' ? 'true' : 'false';

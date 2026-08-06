@@ -86,6 +86,11 @@ def test_reader_root_renders_scan_button(tmp_path, monkeypatch):
     assert 'id="theme-toggle"' in response.text
     assert 'aria-label="Switch to dark mode"' in response.text
     assert '/reader/static/js/theme.js' in response.text
+    assert 'id="display-settings-toggle"' in response.text
+    assert 'id="display-settings-panel"' in response.text
+    assert 'id="thumbnail-size-decrease"' in response.text
+    assert 'id="thumbnail-size-increase"' in response.text
+    assert '/reader/static/js/layout.js' in response.text
 
 
 def test_reader_recent_renders_scan_button(tmp_path, monkeypatch):

@@ -10,12 +10,22 @@
   <title>{% block title %}Comic Library{% endblock %}</title>
   <script>
     (() => {
+      const root = document.documentElement;
       try {
         const savedTheme = localStorage.getItem('issued-theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.dataset.theme = savedTheme || (prefersDark ? 'dark' : 'light');
+        const savedLayoutWidth = localStorage.getItem('issued-layout-width');
+        const savedThumbnailSize = localStorage.getItem('issued-thumbnail-size');
+
+        root.dataset.theme = savedTheme || (prefersDark ? 'dark' : 'light');
+        root.dataset.layoutWidth = ['fixed', 'full'].includes(savedLayoutWidth) ? savedLayoutWidth : 'fixed';
+        root.dataset.thumbnailSize = ['small', 'medium', 'large'].includes(savedThumbnailSize)
+          ? savedThumbnailSize
+          : 'medium';
       } catch (_) {
-        document.documentElement.dataset.theme = 'light';
+        root.dataset.theme = 'light';
+        root.dataset.layoutWidth = 'fixed';
+        root.dataset.thumbnailSize = 'medium';
       }
     })();
   </script>
@@ -31,7 +41,7 @@
 <body
   class="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 text-gray-900 antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]">
   <header class="border-b border-violet-100 bg-white/80 py-3 sm:py-4 backdrop-blur-md shadow-sm">
-    <div class="mx-auto max-w-6xl px-3 sm:px-4">
+    <div class="layout-container mx-auto max-w-6xl px-3 sm:px-4">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
         <div class="flex shrink-0 justify-center lg:justify-start lg:w-[min(14rem,28%)]">
           <a href="{{ url_path(request, 'browse_root') }}"
@@ -102,10 +112,11 @@
       {% endif %}
     </div>
   </header>
-  <main class="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
+  <main class="layout-container mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
     {% block content %}{% endblock %}
   </main>
   {% block scripts %}{% endblock %}
+  <script src="{{ url_path(request, 'reader_static', path='/js/layout.js') }}"></script>
   <script src="{{ url_path(request, 'reader_static', path='/js/theme.js') }}"></script>
   <script>lucide.createIcons();</script>
 </body>

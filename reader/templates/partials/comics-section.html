@@ -134,7 +134,7 @@
         group.comics|length }}</span>
     </h3>
     <!-- Grid view -->
-    <ul class="comics-grid-list grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+    <ul class="comics-grid-list cover-grid grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
       {% for c in group.comics %}
       <li class="group relative">
         <div
@@ -181,7 +181,7 @@
   {% endfor %}
   {% else %}
   <!-- Grid view -->
-  <ul class="comics-grid-list grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+  <ul class="comics-grid-list cover-grid grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
     {% for c in comics %}
     <li class="group relative">
       <div

@@ -1,7 +1,7 @@
 {% if folders %}
 <section class="mb-8">
   <h2 class="mb-4 text-lg font-bold text-gray-800">Folders</h2>
-  <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+<ul class="cover-grid grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
     {% for f in folders %}
     <li class="flex">
       <a href="{{ url_path(request, 'browse_folder', folder_id=f.id) }}"

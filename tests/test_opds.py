@@ -125,6 +125,18 @@ def test_opds_folder_entries_include_nested_comic_thumbnail(client, test_db):
         "type": "image/webp",
     }
 
+    recent_entry = next(
+        entry
+        for entry in ET.fromstring(root_response.content).findall('atom:entry', ns)
+        if entry.find('atom:id', ns).text == "urn:recent"
+    )
+    recent_thumbnail = recent_entry.find(
+        "atom:link[@rel='http://opds-spec.org/image/thumbnail']",
+        ns,
+    )
+    assert recent_thumbnail is not None
+    assert recent_thumbnail.attrib["href"] == expected_href
+
     folder_response = client.get(f"/opds/folder/{library_id}")
     folder_entry = ET.fromstring(folder_response.content).find('atom:entry', ns)
     folder_thumbnail = folder_entry.find(

@@ -16,6 +16,7 @@ from .feeds import (
     _folder_entry_xml,
     _folder_href,
     _get_library_title,
+    _navigation_entry_xml,
     _now_iso,
     _recent_href,
     _root_href,
@@ -46,6 +47,20 @@ def _folder_preview_uuid(conn, folder_id: int) -> str | None:
         LIMIT 1
         """,
         (folder_id,),
+    )
+    row = cur.fetchone()
+    return row["uuid"] if row else None
+
+
+def _recent_preview_uuid(conn) -> str | None:
+    """Return the cover used by the first item in the Recent feed."""
+    cur = conn.execute(
+        """
+        SELECT uuid
+        FROM comics
+        ORDER BY last_scanned_at DESC, id DESC
+        LIMIT 1
+        """
     )
     row = cur.fetchone()
     return row["uuid"] if row else None
@@ -84,6 +99,7 @@ def opds_root(request: Request) -> Response:
             folder["id"]: _folder_preview_uuid(conn, folder["id"])
             for folder in folders
         }
+        recent_preview = _recent_preview_uuid(conn)
 
     updated = _now_iso()
     base_url = str(request.base_url)
@@ -103,15 +119,14 @@ def opds_root(request: Request) -> Response:
         )
 
     entries.append(
-        f"""
-  <entry>
-    <title>Recent</title>
-    <id>urn:recent</id>
-    <updated>{updated}</updated>
-    <link rel="subsection"
-          href="{_absolute_href(base_url, _recent_href(50))}"
-          type="application/atom+xml;profile=opds-catalog" />
-  </entry>"""
+        _navigation_entry_xml(
+            "urn:recent",
+            "Recent",
+            _recent_href(50),
+            updated,
+            base_url,
+            thumbnail_uuid=recent_preview,
+        )
     )
 
     xml = (

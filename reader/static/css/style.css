@@ -384,6 +384,119 @@
   display: none;
 }
 
+/* --- Library display preferences --- */
+
+html[data-layout-width="full"] .layout-container {
+  max-width: none !important;
+}
+
+.cover-grid {
+  --cover-min-width: 8rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--cover-min-width)), 1fr)) !important;
+}
+
+html[data-thumbnail-size="tiny"] .cover-grid {
+  --cover-min-width: 4.75rem;
+}
+
+html[data-thumbnail-size="extra-small"] .cover-grid {
+  --cover-min-width: 5.5rem;
+}
+
+html[data-thumbnail-size="small"] .cover-grid {
+  --cover-min-width: 6.5rem;
+}
+
+html[data-thumbnail-size="large"] .cover-grid {
+  --cover-min-width: 10rem;
+}
+
+html[data-thumbnail-size="extra-large"] .cover-grid {
+  --cover-min-width: 12rem;
+}
+
+html[data-thumbnail-size="huge"] .cover-grid {
+  --cover-min-width: 14rem;
+}
+
+@media (min-width: 640px) {
+  .cover-grid {
+    --cover-min-width: 11rem;
+  }
+
+  html[data-thumbnail-size="tiny"] .cover-grid {
+    --cover-min-width: 5.5rem;
+  }
+
+  html[data-thumbnail-size="extra-small"] .cover-grid {
+    --cover-min-width: 7rem;
+  }
+
+  html[data-thumbnail-size="small"] .cover-grid {
+    --cover-min-width: 8.5rem;
+  }
+
+  html[data-thumbnail-size="large"] .cover-grid {
+    --cover-min-width: 14rem;
+  }
+
+  html[data-thumbnail-size="extra-large"] .cover-grid {
+    --cover-min-width: 18rem;
+  }
+
+  html[data-thumbnail-size="huge"] .cover-grid {
+    --cover-min-width: 22rem;
+  }
+}
+
+html[data-borderless="true"] .cover-grid {
+  gap: 0 !important;
+}
+
+html[data-borderless="true"] .comic-card,
+html[data-borderless="true"] .folder-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-borderless="true"] .comic-card-details,
+html[data-borderless="true"] .folder-card-details {
+  display: none !important;
+}
+
+html[data-borderless="true"] .folder-preview-mosaic,
+html[data-borderless="true"] .folder-preview-images,
+html[data-borderless="true"] .folder-thumb {
+  border-radius: 0 !important;
+}
+
+html[data-borderless="true"] .folder-preview-images {
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+.display-switch[aria-checked="true"] {
+  background-color: #7c3aed;
+}
+
+.display-switch[aria-checked="true"] .display-switch-thumb {
+  transform: translateX(1.25rem);
+}
+
+.display-option[aria-pressed="true"] {
+  border-color: #a78bfa;
+  background-color: #ede9fe;
+  color: #6d28d9;
+}
+
+html[data-theme="dark"] .display-option[aria-pressed="true"] {
+  border-color: #7c3aed !important;
+  background-color: #2e1065 !important;
+  color: #ddd6fe !important;
+}
+
 /* --- Color theme --- */
 html[data-theme="dark"] {
   color-scheme: dark;

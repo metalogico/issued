@@ -29,27 +29,40 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-def _folder_preview_uuid(conn, folder_id: int) -> str | None:
-    """Return the newest comic cover available in a folder's full subtree."""
+def _folder_preview_uuids(conn, folder_ids: list[int]) -> dict[int, str]:
+    """Return the newest generated cover for each requested folder subtree."""
+    if not folder_ids:
+        return {}
+
+    placeholders = ",".join("?" for _ in folder_ids)
     cur = conn.execute(
-        """
-        WITH RECURSIVE folder_tree(id) AS (
-            SELECT id FROM folders WHERE id = ?
+        f"""
+        WITH RECURSIVE folder_tree(root_id, id) AS (
+            SELECT id, id FROM folders WHERE id IN ({placeholders})
             UNION ALL
-            SELECT f.id
+            SELECT ft.root_id, f.id
             FROM folders f
             INNER JOIN folder_tree ft ON f.parent_id = ft.id
+        ),
+        ranked_previews AS (
+            SELECT
+                ft.root_id,
+                c.uuid,
+                ROW_NUMBER() OVER (
+                    PARTITION BY ft.root_id
+                    ORDER BY COALESCE(c.last_scanned_at, c.created_at) DESC, c.id DESC
+                ) AS preview_rank
+            FROM comics c
+            INNER JOIN folder_tree ft ON c.folder_id = ft.id
+            WHERE c.thumbnail_generated = 1
         )
-        SELECT c.uuid
-        FROM comics c
-        INNER JOIN folder_tree ft ON c.folder_id = ft.id
-        ORDER BY COALESCE(c.last_scanned_at, c.created_at) DESC, c.id DESC
-        LIMIT 1
+        SELECT root_id, uuid
+        FROM ranked_previews
+        WHERE preview_rank = 1
         """,
-        (folder_id,),
+        folder_ids,
     )
-    row = cur.fetchone()
-    return row["uuid"] if row else None
+    return {row["root_id"]: row["uuid"] for row in cur.fetchall()}
 
 
 def _recent_preview_uuid(conn) -> str | None:
@@ -58,6 +71,7 @@ def _recent_preview_uuid(conn) -> str | None:
         """
         SELECT uuid
         FROM comics
+        WHERE thumbnail_generated = 1
         ORDER BY last_scanned_at DESC, id DESC
         LIMIT 1
         """
@@ -95,10 +109,10 @@ def opds_root(request: Request) -> Response:
             "SELECT id, name FROM folders WHERE parent_id IS NULL ORDER BY name"
         )
         folders = cur.fetchall()
-        folder_previews = {
-            folder["id"]: _folder_preview_uuid(conn, folder["id"])
-            for folder in folders
-        }
+        folder_previews = _folder_preview_uuids(
+            conn,
+            [folder["id"] for folder in folders],
+        )
         recent_preview = _recent_preview_uuid(conn)
 
     updated = _now_iso()
@@ -114,7 +128,7 @@ def opds_root(request: Request) -> Response:
                 folder["name"],
                 updated,
                 base_url,
-                thumbnail_uuid=folder_previews[folder["id"]],
+                thumbnail_uuid=folder_previews.get(folder["id"]),
             )
         )
 
@@ -170,10 +184,10 @@ def opds_folder(folder_id: int, request: Request) -> Response:
             (folder_id,),
         )
         comics = cur.fetchall()
-        subfolder_previews = {
-            subfolder["id"]: _folder_preview_uuid(conn, subfolder["id"])
-            for subfolder in subfolders
-        }
+        subfolder_previews = _folder_preview_uuids(
+            conn,
+            [subfolder["id"] for subfolder in subfolders],
+        )
 
     updated = _now_iso()
     base_url = str(request.base_url)
@@ -187,7 +201,7 @@ def opds_folder(folder_id: int, request: Request) -> Response:
                 sub["name"],
                 updated,
                 base_url,
-                thumbnail_uuid=subfolder_previews[sub["id"]],
+                thumbnail_uuid=subfolder_previews.get(sub["id"]),
             )
         )
 
@@ -237,7 +251,7 @@ def opds_recent(request: Request, limit: int = Query(50, ge=1, le=200)) -> Respo
             "FROM comics c "
             "JOIN folders f ON c.folder_id = f.id "
             "LEFT JOIN metadata m ON m.comic_id = c.id "
-            "ORDER BY c.last_scanned_at DESC LIMIT ?",
+            "ORDER BY c.last_scanned_at DESC, c.id DESC LIMIT ?",
             (limit,),
         )
         comics = cur.fetchall()

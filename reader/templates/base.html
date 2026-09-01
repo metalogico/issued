@@ -44,8 +44,8 @@
 </head>
 
 <body
-  class="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 text-gray-900 antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]">
-  <header class="border-b border-violet-100 bg-white/80 py-3 sm:py-4 backdrop-blur-md shadow-sm">
+  class="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 text-gray-900 antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] {% block body_class %}{% endblock %}">
+  <header class="site-header border-b border-violet-100 bg-white/80 py-3 sm:py-4 backdrop-blur-md shadow-sm">
     <div class="layout-container mx-auto max-w-6xl px-3 sm:px-4">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
         <div class="flex shrink-0 justify-center lg:justify-start lg:w-[min(14rem,28%)]">
@@ -117,7 +117,7 @@
       {% endif %}
     </div>
   </header>
-  <main class="layout-container mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
+  <main class="site-main layout-container mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
     {% block content %}{% endblock %}
   </main>
   {% block scripts %}{% endblock %}

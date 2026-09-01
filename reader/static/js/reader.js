@@ -1,3 +1,8 @@
+import {
+  createReaderInteractions,
+  MOBILE_READER_MEDIA_QUERY,
+} from './reader-interactions.js';
+
 /**
  * Issued web reader – page navigation, fullscreen, progress tracking, spread view
  */
@@ -25,7 +30,12 @@
   const iconSpreadOff = $('#icon-spread-off');
   const iconSpreadOn = $('#icon-spread-on');
   const btnCoverSep = $('#btn-cover-sep');
+  const readerControls = $('.reader-controls');
+  const actionsToggle = $('#reader-actions-toggle');
+  const actionsPanel = $('#reader-actions-panel');
+  const actionsBackdrop = $('#reader-actions-backdrop');
   const controlEls = ['.reader-controls', '.reader-navigation', '.reader-hints'].map($);
+  const mobileReaderQuery = window.matchMedia(MOBILE_READER_MEDIA_QUERY);
 
   const comicUuid = reader.dataset.comicUuid;
   const pageCount = parseInt(reader.dataset.pageCount, 10) || 1;
@@ -35,11 +45,37 @@
   let loading = false;
   let progressTimer = null;
   let hideTimer = null;
-  let lastTouchEnd = 0;
   let twoPageMode = false;
   let coverSeparate = true;
+  let interactions = null;
+  let mobileActionsOpen = false;
 
   // --- Helpers ---
+
+  const setMobileActionsOpen = (open, { restoreFocus = false } = {}) => {
+    const isMobile = mobileReaderQuery.matches;
+    mobileActionsOpen = Boolean(open && isMobile);
+    readerControls?.classList.toggle('mobile-actions-open', mobileActionsOpen);
+    actionsToggle?.setAttribute('aria-expanded', String(mobileActionsOpen));
+
+    if (actionsPanel) {
+      if (isMobile) {
+        actionsPanel.setAttribute('aria-hidden', String(!mobileActionsOpen));
+        actionsPanel.inert = !mobileActionsOpen;
+      } else {
+        actionsPanel.removeAttribute('aria-hidden');
+        actionsPanel.inert = false;
+      }
+    }
+
+    if (restoreFocus && isMobile) actionsToggle?.focus();
+  };
+
+  const closeMobileActions = (restoreFocus = false) => {
+    setMobileActionsOpen(false, { restoreFocus });
+  };
+
+  const syncMobileActionsLayout = () => closeMobileActions();
 
   const pageUrl = (p) =>
     `/reader/api/comic/${encodeURIComponent(comicUuid)}/page/${p}`;
@@ -94,6 +130,7 @@
 
   const updatePage = (page) => {
     if (page < 1 || page > pageCount || loading) return;
+    interactions?.resetZoom({ animate: false });
     loading = true;
     currentPage = page;
 
@@ -222,41 +259,36 @@
   // --- Spread / cover-sep toggles ---
 
   const toggleSpread = () => {
+    interactions?.resetZoom({ animate: false });
     twoPageMode = !twoPageMode;
     updateBtnStates();
     updatePage(snapPage(currentPage));
+    closeMobileActions(true);
   };
 
   const toggleCoverSep = () => {
+    interactions?.resetZoom({ animate: false });
     coverSeparate = !coverSeparate;
     updateBtnStates();
     updatePage(snapPage(currentPage));
+    closeMobileActions(true);
   };
 
-  // --- Tap navigation (mobile + desktop) ---
+  // --- Pointer navigation, double-tap zoom, and pan ---
 
-  const handleTap = (clientX) => {
-    if (!imageWrap || loading) return;
-    const rect = imageWrap.getBoundingClientRect();
-    navigate((clientX - rect.left) < rect.width / 2 ? -1 : 1);
-  };
-
-  imageWrap?.addEventListener('click', (e) => {
-    if (Date.now() - lastTouchEnd < 400) return;
-    handleTap(e.clientX);
+  interactions = createReaderInteractions({
+    viewport: imageWrap,
+    content: pagesEl,
+    onPrevious: () => navigate(-1),
+    onNext: () => navigate(1),
+    isDisabled: () => loading,
   });
-
-  imageWrap?.addEventListener('touchend', (e) => {
-    if (e.cancelable && e.changedTouches?.length) {
-      e.preventDefault();
-      lastTouchEnd = Date.now();
-      handleTap(e.changedTouches[0].clientX);
-    }
-  }, { passive: false });
 
   // --- Fullscreen ---
 
   const toggleFullscreen = () => {
+    interactions?.resetZoom({ animate: false });
+    closeMobileActions();
     if (!document.fullscreenElement) {
       reader.requestFullscreen().catch(() => { });
     } else {
@@ -274,8 +306,19 @@
   };
 
   fsBtn.addEventListener('click', toggleFullscreen);
+  actionsToggle?.addEventListener('click', (event) => {
+    const opening = !mobileActionsOpen;
+    setMobileActionsOpen(opening);
+    if (opening && event.detail === 0) {
+      actionsPanel?.querySelector('input, button:not(:disabled), a[href]')?.focus();
+    }
+  });
+  actionsBackdrop?.addEventListener('click', () => closeMobileActions(true));
+  mobileReaderQuery.addEventListener('change', syncMobileActionsLayout);
 
   document.addEventListener('fullscreenchange', () => {
+    interactions?.resetZoom({ animate: false });
+    closeMobileActions();
     fsIconEnter.classList.toggle('hidden', !!document.fullscreenElement);
     fsIconExit.classList.toggle('hidden', !document.fullscreenElement);
     if (document.fullscreenElement) {
@@ -298,17 +341,30 @@
   // --- Keyboard ---
 
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && mobileActionsOpen) {
+      e.preventDefault();
+      closeMobileActions(true);
+      return;
+    }
+
+    const target = e.target;
+    if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) {
+      return;
+    }
     const actions = {
       ArrowLeft: () => navigate(-1),
       ArrowRight: () => navigate(1),
       f: toggleFullscreen,
       F: toggleFullscreen,
+      z: () => interactions?.toggleZoomAtCenter(),
+      Z: () => interactions?.toggleZoomAtCenter(),
     };
     if (actions[e.key]) { e.preventDefault(); actions[e.key](); }
   });
 
   // --- Init ---
 
+  syncMobileActionsLayout();
   updateBtnStates();
 
   if (img && spinner) {
@@ -318,4 +374,8 @@
   }
 
   updatePage(initialPage);
+  window.addEventListener('pagehide', () => {
+    interactions?.destroy();
+    mobileReaderQuery.removeEventListener('change', syncMobileActionsLayout);
+  }, { once: true });
 })();

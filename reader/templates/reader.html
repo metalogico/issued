@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
+{% block body_class %}reader-page{% endblock %}
 {% block content %}
 <div class="reader fade-in flex min-h-[100dvh] flex-col sm:min-h-[calc(100vh-5rem)]" data-comic-uuid="{{ comic_uuid }}"
   data-page-count="{{ page_count }}" data-initial-page="{{ initial_page }}" tabindex="0"
@@ -7,19 +8,35 @@
 
   <div
     class="reader-controls sticky top-0 z-10 mb-3 rounded-2xl bg-white/90 backdrop-blur-xl border border-white/30 px-3 py-3 shadow-lg transition-all duration-300 sm:mb-4 sm:px-6 sm:py-4">
-    <div class="flex items-center justify-between gap-2 sm:gap-4">
-      <div class="flex-1 min-w-0">
-        <h1 class="mb-0.5 truncate text-base font-bold text-gray-900 sm:mb-1 sm:text-lg">{{ comic_filename }}</h1>
-        {% if issue_title and issue_title != comic_filename %}
-        <p class="mb-0.5 truncate text-sm text-gray-500 sm:mb-1">{{ issue_title }}</p>
-        {% endif %}
-        <div class="flex items-center gap-2 text-xs sm:gap-3 sm:text-sm">
-          <span class="font-medium text-gray-600">
-            Page
+    <div class="reader-toolbar flex items-center justify-between gap-2 sm:gap-4">
+      {% if breadcrumbs %}
+      <a href="{{ url_path(request, 'browse_folder', folder_id=breadcrumbs[-1].id) }}"
+        class="reader-mobile-back" aria-label="Back to {{ breadcrumbs[-1].name }}" title="Back to {{ breadcrumbs[-1].name }}">
+      {% else %}
+      <a href="{{ url_path(request, 'browse_root') }}" class="reader-mobile-back" aria-label="Back to library"
+        title="Back to library">
+      {% endif %}
+        <i data-lucide="chevron-left" aria-hidden="true"></i>
+      </a>
+
+      <div class="reader-summary flex-1 min-w-0">
+        <div class="reader-desktop-heading">
+          <h1 class="mb-0.5 truncate text-base font-bold text-gray-900 sm:mb-1 sm:text-lg">{{ comic_filename }}</h1>
+          {% if issue_title and issue_title != comic_filename %}
+          <p class="mb-0.5 truncate text-sm text-gray-500 sm:mb-1">{{ issue_title }}</p>
+          {% endif %}
+        </div>
+        <p class="reader-mobile-heading truncate">
+          {{ breadcrumbs[-1].name if breadcrumbs else comic_filename }}
+        </p>
+        <div class="reader-page-status flex items-center gap-2 text-xs sm:gap-3 sm:text-sm">
+          <span class="reader-page-counter font-medium text-gray-600">
+            <span class="reader-page-label">Page </span>
             <span id="reader-page-num" class="font-bold text-violet-600" title="Click to jump to page">{{ initial_page
               }}</span><input id="reader-page-input" type="number" class="hidden font-bold text-violet-600" min="1"
               max="{{ page_count }}" aria-label="Jump to page">
-            of <span id="reader-page-total">{{ page_count }}</span>
+            <span class="reader-page-of"> of </span><span class="reader-page-separator" aria-hidden="true">/</span>
+            <span id="reader-page-total">{{ page_count }}</span>
           </span>
           <div class="reader-progress-wrap flex-1 max-w-xs" id="reader-progress-wrap" title="Click to jump to page">
             <div class="progress-bar h-2 rounded-full overflow-hidden">
@@ -30,43 +47,53 @@
           </div>
         </div>
       </div>
-      <!-- Tags widget -->
-      <div id="reader-tags-wrap" class="mt-1.5 flex flex-wrap items-center gap-1.5">
-        <div id="reader-tags-chips" class="flex flex-wrap gap-1.5"></div>
-        <div class="flex items-center gap-1">
-          <input type="text" id="reader-tag-input" list="reader-tag-suggestions" placeholder="Add tag…"
-            class="rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1 text-xs transition focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-200 w-28"
-            autocomplete="off">
-          <datalist id="reader-tag-suggestions"></datalist>
-          <button type="button" id="reader-tag-add"
-            class="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 active:scale-95">+</button>
+
+      <div id="reader-actions-panel" class="reader-secondary-actions" role="group" aria-label="Reader actions">
+        <div id="reader-tags-wrap" class="reader-tags-wrap mt-1.5 flex flex-wrap items-center gap-1.5">
+          <span class="reader-mobile-action-heading">Tags</span>
+          <div id="reader-tags-chips" class="flex flex-wrap gap-1.5"></div>
+          <div class="reader-tag-entry flex items-center gap-1">
+            <input type="text" id="reader-tag-input" list="reader-tag-suggestions" placeholder="Add tag…"
+              class="rounded-lg border border-gray-200 bg-white/80 px-2.5 py-1 text-xs transition focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-200 w-28"
+              autocomplete="off">
+            <datalist id="reader-tag-suggestions"></datalist>
+            <button type="button" id="reader-tag-add"
+              class="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 active:scale-95"
+              aria-label="Add tag">+</button>
+          </div>
+        </div>
+        <div class="reader-view-actions flex items-center gap-2">
+          <span class="reader-mobile-action-heading">Page layout</span>
+          <button type="button" id="btn-spread"
+            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
+            title="Toggle 2-page spread" aria-label="Toggle 2-page spread">
+            <svg id="icon-spread-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="9" height="18" rx="1.5" />
+              <rect x="13" y="3" width="9" height="18" rx="1.5" />
+            </svg>
+            <svg id="icon-spread-on" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="5" y="3" width="14" height="18" rx="1.5" />
+            </svg>
+            <span class="reader-mobile-action-label">Two-page spread</span>
+          </button>
+          <button type="button" id="btn-cover-sep"
+            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
+            title="First page separate (cover)" aria-label="First page separate" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="3" width="8" height="18" rx="1.5" />
+              <rect x="11" y="7" width="5.5" height="10" rx="1" />
+              <rect x="17.5" y="7" width="5.5" height="10" rx="1" />
+            </svg>
+            <span class="reader-mobile-action-label">Keep cover separate</span>
+          </button>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <button type="button" id="btn-spread"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
-          title="Toggle 2-page spread" aria-label="Toggle 2-page spread">
-          <svg id="icon-spread-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="3" width="9" height="18" rx="1.5" />
-            <rect x="13" y="3" width="9" height="18" rx="1.5" />
-          </svg>
-          <svg id="icon-spread-on" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <rect x="5" y="3" width="14" height="18" rx="1.5" />
-          </svg>
-        </button>
-        <button type="button" id="btn-cover-sep"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
-          title="First page separate (cover)" aria-label="First page separate" disabled>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="1" y="3" width="8" height="18" rx="1.5" />
-            <rect x="11" y="7" width="5.5" height="10" rx="1" />
-            <rect x="17.5" y="7" width="5.5" height="10" rx="1" />
-          </svg>
-        </button>
+
+      <div class="reader-primary-actions flex items-center gap-2">
         <button type="button" id="fullscreen-toggle"
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-gray-600 shadow-md transition touch-manipulation hover:bg-violet-50 hover:text-violet-600 active:scale-95"
           title="Toggle fullscreen (F)" aria-label="Fullscreen">
@@ -80,13 +107,20 @@
             <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
           </svg>
         </button>
+        <button type="button" id="reader-actions-toggle" class="reader-actions-toggle" aria-label="Reader actions"
+          aria-controls="reader-actions-panel" aria-expanded="false" title="Reader actions">
+          <i data-lucide="ellipsis" aria-hidden="true"></i>
+        </button>
       </div>
     </div>
+    <button type="button" id="reader-actions-backdrop" class="reader-actions-backdrop" tabindex="-1"
+      aria-label="Close reader actions"></button>
   </div>
 
   <div
     class="reader-image-wrap flex min-h-[50vh] flex-1 items-center justify-center overflow-hidden rounded-2xl bg-gray-900 p-2 shadow-2xl cursor-pointer touch-manipulation select-none sm:min-h-[500px] sm:rounded-3xl sm:p-4"
-    role="img" aria-label="Comic page – tap left for previous, right for next">
+    role="img" aria-label="Comic page – tap near an edge to navigate, double-tap the center to zoom"
+    data-zoomed="false" title="Tap near an edge to navigate; double-tap to zoom">
     <div id="reader-spinner" class="reader-spinner" aria-label="Loading page"></div>
     <div id="reader-pages" class="reader-pages">
       <img id="reader-image" src="{{ url_path(request, 'api_comic_page', comic_uuid=comic_uuid, page_num=initial_page) }}"
@@ -109,12 +143,12 @@
         class="transition-transform group-hover:-translate-x-1">
         <path d="m15 18-6-6 6-6" />
       </svg>
-      <span>Previous</span>
+      <span class="reader-nav-label">Previous</span>
     </button>
     <button type="button" id="reader-next"
       class="reader-nav-btn group flex min-h-[48px] min-w-[48px] flex-1 max-w-[180px] items-center justify-center gap-2 rounded-2xl bg-violet-600 hover:bg-violet-700 px-4 py-3 font-semibold text-white shadow-lg transition touch-manipulation active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-0 sm:max-w-none sm:px-6"
       aria-label="Next page">
-      <span>Next</span>
+      <span class="reader-nav-label">Next</span>
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
         class="transition-transform group-hover:translate-x-1">
@@ -124,7 +158,8 @@
   </nav>
 
   <div class="reader-hints mt-4 text-center sm:mt-6" style="transition: opacity 0.3s ease;">
-    <p class="text-xs text-gray-500 sm:text-sm">
+    <p class="reader-mobile-hint text-xs text-gray-500">Tap edges to turn · Double-tap to zoom</p>
+    <p class="reader-desktop-hint text-xs text-gray-500 sm:text-sm">
       <kbd class="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-gray-700 shadow">←</kbd>
       <span class="mx-2">and</span>
       <kbd class="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-gray-700 shadow">→</kbd>
@@ -135,13 +170,16 @@
       <kbd class="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-gray-700 shadow">ESC</kbd>
       <span class="ml-2">for fullscreen</span>
       <span class="mx-2">·</span>
+      <kbd class="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-gray-700 shadow">Z</kbd>
+      <span class="ml-2">or double-tap to zoom</span>
+      <span class="mx-2">·</span>
       <span class="mx-2">click page number or progress bar to jump</span>
     </p>
   </div>
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_path(request, 'reader_static', path='/js/reader.js') }}"></script>
+<script type="module" src="{{ url_path(request, 'reader_static', path='/js/reader.js') }}"></script>
 <script>
   (function () {
     const comicUuid = document.querySelector('.reader[data-comic-uuid]')?.dataset.comicUuid;

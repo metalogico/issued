@@ -13,8 +13,10 @@ from .feeds import (
     _comic_entry_xml,
     _comic_media_type,
     _escape_xml,
+    _folder_entry_xml,
     _folder_href,
     _get_library_title,
+    _navigation_entry_xml,
     _now_iso,
     _recent_href,
     _root_href,
@@ -25,6 +27,57 @@ from .feeds import (
 logger = get_logger(__name__)
 
 router = APIRouter()
+
+
+def _folder_preview_uuids(conn, folder_ids: list[int]) -> dict[int, str]:
+    """Return the newest generated cover for each requested folder subtree."""
+    if not folder_ids:
+        return {}
+
+    placeholders = ",".join("?" for _ in folder_ids)
+    cur = conn.execute(
+        f"""
+        WITH RECURSIVE folder_tree(root_id, id) AS (
+            SELECT id, id FROM folders WHERE id IN ({placeholders})
+            UNION ALL
+            SELECT ft.root_id, f.id
+            FROM folders f
+            INNER JOIN folder_tree ft ON f.parent_id = ft.id
+        ),
+        ranked_previews AS (
+            SELECT
+                ft.root_id,
+                c.uuid,
+                ROW_NUMBER() OVER (
+                    PARTITION BY ft.root_id
+                    ORDER BY COALESCE(c.last_scanned_at, c.created_at) DESC, c.id DESC
+                ) AS preview_rank
+            FROM comics c
+            INNER JOIN folder_tree ft ON c.folder_id = ft.id
+            WHERE c.thumbnail_generated = 1
+        )
+        SELECT root_id, uuid
+        FROM ranked_previews
+        WHERE preview_rank = 1
+        """,
+        folder_ids,
+    )
+    return {row["root_id"]: row["uuid"] for row in cur.fetchall()}
+
+
+def _recent_preview_uuid(conn) -> str | None:
+    """Return the cover used by the first item in the Recent feed."""
+    cur = conn.execute(
+        """
+        SELECT uuid
+        FROM comics
+        WHERE thumbnail_generated = 1
+        ORDER BY last_scanned_at DESC, id DESC
+        LIMIT 1
+        """
+    )
+    row = cur.fetchone()
+    return row["uuid"] if row else None
 
 
 @router.get("/favicon.ico", include_in_schema=False)
@@ -56,6 +109,11 @@ def opds_root(request: Request) -> Response:
             "SELECT id, name FROM folders WHERE parent_id IS NULL ORDER BY name"
         )
         folders = cur.fetchall()
+        folder_previews = _folder_preview_uuids(
+            conn,
+            [folder["id"] for folder in folders],
+        )
+        recent_preview = _recent_preview_uuid(conn)
 
     updated = _now_iso()
     base_url = str(request.base_url)
@@ -65,27 +123,24 @@ def opds_root(request: Request) -> Response:
     entries = []
     for folder in folders:
         entries.append(
-            f"""
-  <entry>
-    <title>{_escape_xml(folder['name'])}</title>
-    <id>urn:folder:{folder['id']}</id>
-    <updated>{updated}</updated>
-    <link rel="subsection"
-          href="{_absolute_href(base_url, _folder_href(folder['id']))}"
-          type="application/atom+xml;profile=opds-catalog" />
-  </entry>"""
+            _folder_entry_xml(
+                folder["id"],
+                folder["name"],
+                updated,
+                base_url,
+                thumbnail_uuid=folder_previews.get(folder["id"]),
+            )
         )
 
     entries.append(
-        f"""
-  <entry>
-    <title>Recent</title>
-    <id>urn:recent</id>
-    <updated>{updated}</updated>
-    <link rel="subsection"
-          href="{_absolute_href(base_url, _recent_href(50))}"
-          type="application/atom+xml;profile=opds-catalog" />
-  </entry>"""
+        _navigation_entry_xml(
+            "urn:recent",
+            "Recent",
+            _recent_href(50),
+            updated,
+            base_url,
+            thumbnail_uuid=recent_preview,
+        )
     )
 
     xml = (
@@ -129,6 +184,10 @@ def opds_folder(folder_id: int, request: Request) -> Response:
             (folder_id,),
         )
         comics = cur.fetchall()
+        subfolder_previews = _folder_preview_uuids(
+            conn,
+            [subfolder["id"] for subfolder in subfolders],
+        )
 
     updated = _now_iso()
     base_url = str(request.base_url)
@@ -137,15 +196,13 @@ def opds_folder(folder_id: int, request: Request) -> Response:
     entries = []
     for sub in subfolders:
         entries.append(
-            f"""
-  <entry>
-    <title>{_escape_xml(sub['name'])}</title>
-    <id>urn:folder:{sub['id']}</id>
-    <updated>{updated}</updated>
-    <link rel="subsection"
-          href="{_absolute_href(base_url, _folder_href(sub['id']))}"
-          type="application/atom+xml;profile=opds-catalog" />
-  </entry>"""
+            _folder_entry_xml(
+                sub["id"],
+                sub["name"],
+                updated,
+                base_url,
+                thumbnail_uuid=subfolder_previews.get(sub["id"]),
+            )
         )
 
     is_series = len(subfolders) == 0
@@ -194,7 +251,7 @@ def opds_recent(request: Request, limit: int = Query(50, ge=1, le=200)) -> Respo
             "FROM comics c "
             "JOIN folders f ON c.folder_id = f.id "
             "LEFT JOIN metadata m ON m.comic_id = c.id "
-            "ORDER BY c.last_scanned_at DESC LIMIT ?",
+            "ORDER BY c.last_scanned_at DESC, c.id DESC LIMIT ?",
             (limit,),
         )
         comics = cur.fetchall()

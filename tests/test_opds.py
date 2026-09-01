@@ -17,8 +17,9 @@ from server.opds.feeds import _comic_media_type
 
 
 @pytest.fixture
-def test_config(tmp_path):
+def test_config(tmp_path, monkeypatch):
     """Create a test configuration."""
+    monkeypatch.setattr("server.config.DATA_DIR", tmp_path, raising=True)
     library_path = tmp_path / "comics"
     library_path.mkdir()
     
@@ -78,6 +79,148 @@ def test_opds_root_has_required_elements(client):
     assert root.find('atom:id', ns) is not None
     assert root.find('atom:title', ns) is not None
     assert root.find('atom:updated', ns) is not None
+
+
+def test_opds_folder_entries_include_nested_comic_thumbnail(
+    client,
+    test_config,
+    test_db,
+):
+    """Navigation folders use the newest successfully generated subtree cover."""
+    with Session(test_db) as session:
+        library = Folder(name="Comics", path=".")
+        session.add(library)
+        session.commit()
+        session.refresh(library)
+
+        series = Folder(name="Example Series", path="Example Series", parent_id=library.id)
+        session.add(series)
+        session.commit()
+        session.refresh(series)
+        library_id = library.id
+
+        valid_comic = Comic(
+            uuid="folder-preview-comic",
+            filename="Issue 1.cbz",
+            path="Example Series/Issue 1.cbz",
+            format="cbz",
+            file_size=100,
+            page_count=12,
+            file_modified_at=datetime(2026, 1, 1),
+            last_scanned_at=datetime(2026, 1, 1),
+            thumbnail_generated=True,
+            folder_id=series.id,
+        )
+        session.add(valid_comic)
+        session.add(
+            Comic(
+                uuid="missing-newer-thumbnail",
+                filename="Issue 2.cbz",
+                path="Example Series/Issue 2.cbz",
+                format="cbz",
+                file_size=100,
+                page_count=12,
+                file_modified_at=datetime(2026, 2, 1),
+                last_scanned_at=datetime(2026, 2, 1),
+                thumbnail_generated=False,
+                folder_id=series.id,
+            )
+        )
+        session.commit()
+
+    test_config.thumbnails_dir.mkdir()
+    (test_config.thumbnails_dir / "folder-preview-comic.webp").write_bytes(b"webp")
+
+    ns = {'atom': 'http://www.w3.org/2005/Atom'}
+    expected_href = "http://testserver/opds/comic/folder-preview-comic/thumbnail"
+
+    root_response = client.get("/opds/")
+    root_entry = ET.fromstring(root_response.content).find('atom:entry', ns)
+    root_thumbnail = root_entry.find(
+        "atom:link[@rel='http://opds-spec.org/image/thumbnail']",
+        ns,
+    )
+    assert root_thumbnail is not None
+    assert root_thumbnail.attrib == {
+        "rel": "http://opds-spec.org/image/thumbnail",
+        "href": expected_href,
+        "type": "image/webp",
+    }
+    assert client.get(root_thumbnail.attrib["href"]).status_code == 200
+
+    recent_entry = next(
+        entry
+        for entry in ET.fromstring(root_response.content).findall('atom:entry', ns)
+        if entry.find('atom:id', ns).text == "urn:recent"
+    )
+    recent_thumbnail = recent_entry.find(
+        "atom:link[@rel='http://opds-spec.org/image/thumbnail']",
+        ns,
+    )
+    assert recent_thumbnail is not None
+    assert recent_thumbnail.attrib["href"] == expected_href
+
+    folder_response = client.get(f"/opds/folder/{library_id}")
+    folder_entry = ET.fromstring(folder_response.content).find('atom:entry', ns)
+    folder_thumbnail = folder_entry.find(
+        "atom:link[@rel='http://opds-spec.org/image/thumbnail']",
+        ns,
+    )
+    assert folder_thumbnail is not None
+    assert folder_thumbnail.attrib["href"] == expected_href
+
+
+def test_recent_preview_matches_first_entry_when_scan_times_are_tied(
+    client,
+    test_config,
+    test_db,
+):
+    """Recent artwork and feed use the same deterministic tie-breaker."""
+    tied_scan_time = datetime(2026, 3, 1)
+    with Session(test_db) as session:
+        library = Folder(name="Comics", path=".")
+        session.add(library)
+        session.commit()
+        session.refresh(library)
+
+        for index in (1, 2):
+            session.add(
+                Comic(
+                    uuid=f"recent-{index}",
+                    filename=f"Issue {index}.cbz",
+                    path=f"Issue {index}.cbz",
+                    format="cbz",
+                    file_size=100,
+                    page_count=12,
+                    file_modified_at=tied_scan_time,
+                    last_scanned_at=tied_scan_time,
+                    thumbnail_generated=True,
+                    folder_id=library.id,
+                )
+            )
+        session.commit()
+
+    test_config.thumbnails_dir.mkdir()
+    for index in (1, 2):
+        (test_config.thumbnails_dir / f"recent-{index}.webp").write_bytes(b"webp")
+
+    ns = {'atom': 'http://www.w3.org/2005/Atom'}
+    root = ET.fromstring(client.get("/opds/").content)
+    recent_navigation = next(
+        entry
+        for entry in root.findall('atom:entry', ns)
+        if entry.find('atom:id', ns).text == "urn:recent"
+    )
+    preview_href = recent_navigation.find(
+        "atom:link[@rel='http://opds-spec.org/image/thumbnail']",
+        ns,
+    ).attrib["href"]
+
+    recent_feed = ET.fromstring(client.get("/opds/recent").content)
+    first_recent_id = recent_feed.find('atom:entry/atom:id', ns).text
+
+    assert preview_href.endswith("/recent-2/thumbnail")
+    assert first_recent_id == "urn:comic:recent-2"
 
 
 def test_opds_search_returns_results(client, test_db, test_config):

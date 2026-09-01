@@ -8,6 +8,32 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>{% block title %}Comic Library{% endblock %}</title>
+  <script>
+    (() => {
+      const root = document.documentElement;
+      try {
+        const savedTheme = localStorage.getItem('issued-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const savedLayoutWidth = localStorage.getItem('issued-layout-width');
+        const savedThumbnailSize = localStorage.getItem('issued-thumbnail-size');
+        const savedBorderless = localStorage.getItem('issued-borderless-collage');
+
+        root.dataset.theme = savedTheme || (prefersDark ? 'dark' : 'light');
+        root.dataset.layoutWidth = ['fixed', 'full'].includes(savedLayoutWidth) ? savedLayoutWidth : 'fixed';
+        root.dataset.thumbnailSize = [
+          'tiny', 'extra-small', 'small', 'medium', 'large', 'extra-large', 'huge'
+        ].includes(savedThumbnailSize)
+          ? savedThumbnailSize
+          : 'medium';
+        root.dataset.borderless = savedBorderless === 'true' ? 'true' : 'false';
+      } catch (_) {
+        root.dataset.theme = 'light';
+        root.dataset.layoutWidth = 'fixed';
+        root.dataset.thumbnailSize = 'medium';
+        root.dataset.borderless = 'false';
+      }
+    })();
+  </script>
   <script src="{{ url_path(request, 'reader_static', path='/js/tailwind.js') }}"></script>
   <script src="{{ url_path(request, 'reader_static', path='/js/htmx.min.js') }}"></script>
   <script src="{{ url_path(request, 'reader_static', path='/js/sweetalert2.all.min.js') }}"></script>
@@ -18,9 +44,9 @@
 </head>
 
 <body
-  class="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 text-gray-900 antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]">
-  <header class="border-b border-violet-100 bg-white/80 py-3 sm:py-4 backdrop-blur-md shadow-sm">
-    <div class="mx-auto max-w-6xl px-3 sm:px-4">
+  class="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 text-gray-900 antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] {% block body_class %}{% endblock %}">
+  <header class="site-header border-b border-violet-100 bg-white/80 py-3 sm:py-4 backdrop-blur-md shadow-sm">
+    <div class="layout-container mx-auto max-w-6xl px-3 sm:px-4">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
         <div class="flex shrink-0 justify-center lg:justify-start lg:w-[min(14rem,28%)]">
           <a href="{{ url_path(request, 'browse_root') }}"
@@ -63,6 +89,12 @@
             class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 touch-manipulation">
             <i data-lucide="refresh-cw" class="h-4 w-4"></i>
           </button>
+          <button type="button" id="theme-toggle" title="Switch to dark mode" aria-label="Switch to dark mode"
+            aria-pressed="false"
+            class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 touch-manipulation">
+            <i data-lucide="moon" class="theme-moon h-4 w-4"></i>
+            <i data-lucide="sun" class="theme-sun h-4 w-4"></i>
+          </button>
         </nav>
       </div>
       {% if breadcrumbs %}
@@ -85,10 +117,12 @@
       {% endif %}
     </div>
   </header>
-  <main class="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
+  <main class="site-main layout-container mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
     {% block content %}{% endblock %}
   </main>
   {% block scripts %}{% endblock %}
+  <script src="{{ url_path(request, 'reader_static', path='/js/layout.js') }}"></script>
+  <script src="{{ url_path(request, 'reader_static', path='/js/theme.js') }}"></script>
   <script>lucide.createIcons();</script>
 </body>
 

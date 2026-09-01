@@ -29,7 +29,7 @@ from server.models import Folder
 from server.logging_config import setup_logging
 
 
-__version__ = "0.1.8"
+__version__ = "0.2.0"
 
 app = typer.Typer(add_completion=False, help="Issued comic library CLI")
 logger = logging.getLogger("issued")

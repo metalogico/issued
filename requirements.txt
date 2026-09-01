@@ -21,7 +21,7 @@ markupsafe==3.0.3
 mdurl==0.1.2
 multivolumefile==0.2.3
 packaging==26.2
-pillow==12.2.0
+pillow==12.3.0
 PyMuPDF==1.27.2.3
 pluggy==1.6.0
 psutil==7.2.2
@@ -38,7 +38,7 @@ pytest==9.0.3
 python-multipart==0.0.32
 rarfile==4.2
 rich==15.0.0
-setuptools==82.0.1
+setuptools==83.0.0
 shellingham==1.5.4
 sqlalchemy==2.0.50
 sqlmodel==0.0.38

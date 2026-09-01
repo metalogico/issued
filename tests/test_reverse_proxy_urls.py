@@ -123,7 +123,33 @@ def test_reader_page_uses_origin_relative_page_image_url(proxy_app, monkeypatch)
     assert response.status_code == 200
     assert 'src="/reader/api/comic/proxy-comic/page/1"' in response.text
     assert 'src="/reader/static/js/reader.js"' in response.text
+    assert "reader-page" in response.text
+    assert 'href="/reader/" class="reader-mobile-back"' in response.text
     assert "issued.internal:8181" not in response.text
+
+
+def test_reader_mobile_back_link_targets_containing_folder(proxy_app, monkeypatch):
+    _, _, client = proxy_app
+    browse_module = importlib.import_module("reader.routes.browse")
+    monkeypatch.setattr(
+        browse_module.services,
+        "get_comic_by_uuid",
+        lambda comic_uuid: {"filename": "Issue 1.cbz", "page_count": 12},
+    )
+    monkeypatch.setattr(browse_module.repo, "get_initial_page", lambda *args: 1)
+    monkeypatch.setattr(browse_module.repo, "get_folder_id_for_comic", lambda *args: 42)
+    monkeypatch.setattr(
+        browse_module.repo,
+        "get_breadcrumbs_for_folder",
+        lambda *args: [{"id": 7, "name": "Series"}],
+    )
+    monkeypatch.setattr(browse_module.repo, "get_metadata", lambda *args: None)
+
+    response = client.get("/reader/comic/proxy-comic")
+
+    assert response.status_code == 200
+    assert 'href="/reader/folder/7"' in response.text
+    assert 'aria-label="Back to Series"' in response.text
 
 
 def test_reader_auth_pages_and_redirects_use_origin_relative_urls(proxy_app):

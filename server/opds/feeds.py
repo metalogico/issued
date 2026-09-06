@@ -86,8 +86,52 @@ def _search_href(q: str) -> str:
     return f"/opds/search?q={quote(q)}"
 
 
+def _opensearch_href() -> str:
+    return "/opds/search.xml"
+
+
+def _search_template_href() -> str:
+    return "/opds/search?q={searchTerms}"
+
+
 def _absolute_href(base_url: str, path: str) -> str:
     return base_url.rstrip("/") + path
+
+
+def _catalog_links_xml(base_url: str, self_href: str) -> str:
+    """Atom catalog links: self, start, and OpenSearch autodiscovery."""
+    start_href = _absolute_href(base_url, _root_href())
+    search_href = _absolute_href(base_url, _opensearch_href())
+    return (
+        f'  <link rel="self" href="{self_href}" type="application/atom+xml;profile=opds-catalog" />\n'
+        f'  <link rel="start" href="{start_href}" type="application/atom+xml;profile=opds-catalog" />\n'
+        f'  <link rel="search" href="{search_href}" type="application/opensearchdescription+xml" />'
+    )
+
+
+def _opensearch_short_name(library_title: str) -> str:
+    """OpenSearch ShortName is limited to 16 plain-text characters."""
+    name = library_title.strip()
+    if not name:
+        return "Issued"
+    return name[:16]
+
+
+def _opensearch_description_xml(base_url: str, library_title: str) -> str:
+    title = library_title.strip() or "Issued Library"
+    short_name = _escape_xml(_opensearch_short_name(title))
+    description = _escape_xml(f"Search {title}")
+    template = _absolute_href(base_url, _search_template_href())
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">\n'
+        f"  <ShortName>{short_name}</ShortName>\n"
+        f"  <Description>{description}</Description>\n"
+        "  <InputEncoding>UTF-8</InputEncoding>\n"
+        '  <Url type="application/atom+xml;profile=opds-catalog;kind=acquisition"\n'
+        f'       template="{template}" />\n'
+        "</OpenSearchDescription>"
+    )
 
 
 def _escape_xml(s: str) -> str:
@@ -125,6 +169,13 @@ def _xml_response(xml: str) -> Response:
     return Response(
         content=xml,
         media_type="application/atom+xml;profile=opds-catalog",
+    )
+
+
+def _opensearch_response(xml: str) -> Response:
+    return Response(
+        content=xml,
+        media_type="application/opensearchdescription+xml",
     )
 
 

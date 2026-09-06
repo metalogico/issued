@@ -211,7 +211,9 @@ This will:
 1. Open your comic reader app
 2. Add a new OPDS catalog
 3. Enter: `http://YOUR-IP:8181/opds/`
-4. Browse and download comics!
+4. Browse, search, and download comics!
+
+Compatible OPDS clients discover library search automatically via OpenSearch.
 
 > **Finding your IP:** 
 > - macOS/Linux: Run `ifconfig` or `ip addr`

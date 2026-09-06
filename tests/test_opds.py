@@ -254,6 +254,77 @@ def test_opds_search_returns_results(client, test_db, test_config):
     assert len(entries) > 0
 
 
+def _atom_search_link(xml: bytes):
+    ns = {'atom': 'http://www.w3.org/2005/Atom'}
+    return ET.fromstring(xml).find("atom:link[@rel='search']", ns)
+
+
+def test_opds_feeds_advertise_opensearch(client):
+    """Root and other catalog feeds link to the OpenSearch description."""
+    expected = {
+        "rel": "search",
+        "href": "http://testserver/opds/search.xml",
+        "type": "application/opensearchdescription+xml",
+    }
+
+    root_link = _atom_search_link(client.get("/opds/").content)
+    assert root_link is not None
+    assert root_link.attrib == expected
+
+    recent_link = _atom_search_link(client.get("/opds/recent").content)
+    assert recent_link is not None
+    assert recent_link.attrib == expected
+
+
+def test_opensearch_description_document(client):
+    """OpenSearch OSD uses an OPDS acquisition template with {searchTerms}."""
+    response = client.get("/opds/search.xml")
+    assert response.status_code == 200
+    assert "application/opensearchdescription+xml" in response.headers["content-type"]
+
+    ns = {'os': 'http://a9.com/-/spec/opensearch/1.1/'}
+    root = ET.fromstring(response.content)
+    assert root.tag == "{http://a9.com/-/spec/opensearch/1.1/}OpenSearchDescription"
+    assert root.find('os:ShortName', ns).text == "Test Library"
+    assert root.find('os:Description', ns).text == "Search Test Library"
+
+    url = root.find('os:Url', ns)
+    assert url is not None
+    assert url.attrib["type"] == "application/atom+xml;profile=opds-catalog;kind=acquisition"
+    assert url.attrib["template"] == "http://testserver/opds/search?q={searchTerms}"
+
+
+def test_opds_search_autodiscovery_flow(client, test_db, test_config):
+    """Clients follow root → OSD → search template substitution."""
+    with Session(test_db) as session:
+        repo = Repository(session, test_config.library_path)
+        folder = repo.get_or_create_folder(test_config.library_path)
+
+        comic = Comic(
+            filename="Batman #1.cbz",
+            path="Batman #1.cbz",
+            format="cbz",
+            file_size=1000000,
+            page_count=24,
+            file_modified_at=datetime.now(),
+            folder_id=folder.id,
+        )
+        session.add(comic)
+        session.commit()
+
+    search_link = _atom_search_link(client.get("/opds/").content)
+    osd = ET.fromstring(client.get(search_link.attrib["href"]).content)
+    template = osd.find(
+        '{http://a9.com/-/spec/opensearch/1.1/}Url'
+    ).attrib["template"]
+    results = client.get(template.replace("{searchTerms}", "Batman"))
+
+    assert results.status_code == 200
+    ns = {'atom': 'http://www.w3.org/2005/Atom'}
+    entries = ET.fromstring(results.content).findall('atom:entry', ns)
+    assert len(entries) > 0
+
+
 def test_opds_folder_endpoint_returns_404_for_missing(client):
     """Test that folder endpoint returns 404 for non-existent folder."""
     response = client.get("/opds/folder/999")

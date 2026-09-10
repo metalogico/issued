@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from server.database import db_connection
 from .. import repo
 from .. import services
+from .. import series
 
 router = APIRouter(tags=["reader"])
 
@@ -53,6 +54,32 @@ def api_comic_info(comic_uuid: str):
     if not comic:
         raise HTTPException(status_code=404, detail="Comic not found")
     return {"title": comic["filename"], "page_count": comic["page_count"]}
+
+
+@router.get("/api/comic/{comic_uuid}/navigation")
+def api_comic_navigation(request: Request, comic_uuid: str, context: str = "series"):
+    """Return reader navigation independently from progress persistence."""
+    if context != "series":
+        raise HTTPException(status_code=400, detail="Unsupported reading context")
+    with db_connection() as conn:
+        navigation = series.get_series_navigation(conn, comic_uuid)
+    if navigation is None:
+        raise HTTPException(status_code=404, detail="Comic not found in a series")
+
+    folder_id = navigation["folder_id"]
+    navigation["return_url"] = request.url_for("browse_folder", folder_id=folder_id).path
+    for direction in ("previous", "next"):
+        comic = navigation[direction]
+        if comic:
+            path = request.url_for("reader_view", comic_uuid=comic["uuid"]).path
+            query = f"series={folder_id}"
+            if comic["is_completed"]:
+                query += "&start=1"
+            comic["reader_url"] = f"{path}?{query}"
+            comic["thumbnail_url"] = request.url_for(
+                "get_thumbnail", comic_uuid=comic["uuid"]
+            ).path
+    return navigation
 
 
 @router.get("/api/comic/{comic_uuid}/page/{page_num:int}")

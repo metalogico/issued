@@ -34,19 +34,25 @@ import {
   const actionsToggle = $('#reader-actions-toggle');
   const actionsPanel = $('#reader-actions-panel');
   const actionsBackdrop = $('#reader-actions-backdrop');
+  const seriesEnd = $('#reader-series-end');
+  const progressError = $('#reader-progress-error');
+  const comicLinks = document.querySelectorAll('.reader-comic-link');
   const controlEls = ['.reader-controls', '.reader-navigation', '.reader-hints'].map($);
   const mobileReaderQuery = window.matchMedia(MOBILE_READER_MEDIA_QUERY);
 
   const comicUuid = reader.dataset.comicUuid;
   const pageCount = parseInt(reader.dataset.pageCount, 10) || 1;
   const initialPage = parseInt(reader.dataset.initialPage, 10) || 1;
+  const wasCompleted = reader.dataset.wasCompleted === 'true';
 
   let currentPage = initialPage;
+  let lastVisiblePage = initialPage;
   let loading = false;
   let progressTimer = null;
   let hideTimer = null;
   let twoPageMode = false;
   let coverSeparate = true;
+  let completed = wasCompleted;
   let interactions = null;
   let mobileActionsOpen = false;
 
@@ -139,6 +145,8 @@ import {
     if (imgRight) imgRight.style.opacity = '0.5';
 
     const rightPage = getRightPage(page);
+    lastVisiblePage = rightPage ?? page;
+    if (lastVisiblePage >= pageCount) completed = true;
     let leftLoaded = false;
     let rightLoaded = !rightPage;
 
@@ -178,6 +186,7 @@ import {
     progressBar.style.width = `${(page / pageCount) * 100}%`;
     prevBtn.disabled = getPrevPage() < 1;
     nextBtn.disabled = getNextPage() > pageCount;
+    seriesEnd?.classList.toggle('hidden', lastVisiblePage < pageCount);
 
     saveProgress(page, rightPage);
   };
@@ -186,16 +195,42 @@ import {
 
   // --- Progress save (debounced) ---
 
+  const progressPayload = (lastVisible) => ({
+    current_page: lastVisible,
+    is_completed: completed || lastVisible >= pageCount,
+  });
+
+  const persistProgress = async (lastVisible, { showError = false } = {}) => {
+    try {
+      const response = await fetch(`/reader/api/comic/${encodeURIComponent(comicUuid)}/progress`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(progressPayload(lastVisible)),
+      });
+      if (!response.ok) throw new Error(`Progress save failed with ${response.status}`);
+      progressError?.classList.add('hidden');
+      return true;
+    } catch (_) {
+      if (showError) progressError?.classList.remove('hidden');
+      return false;
+    }
+  };
+
   const saveProgress = (page, rightPage) => {
     const lastVisible = rightPage ?? page;
     clearTimeout(progressTimer);
-    progressTimer = setTimeout(() => {
-      fetch(`/reader/api/comic/${encodeURIComponent(comicUuid)}/progress`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ current_page: lastVisible, is_completed: lastVisible >= pageCount }),
-      }).catch(() => { });
-    }, 500);
+    progressTimer = setTimeout(() => { persistProgress(lastVisible); }, 500);
+  };
+
+  const navigateToComic = async (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const link = event.currentTarget;
+    clearTimeout(progressTimer);
+    link.setAttribute('aria-disabled', 'true');
+    const saved = await persistProgress(lastVisiblePage, { showError: true });
+    link.removeAttribute('aria-disabled');
+    if (saved) window.location.assign(link.href);
   };
 
   // --- Progress bar scrubbing ---
@@ -335,6 +370,7 @@ import {
 
   prevBtn.addEventListener('click', () => { navigate(-1); showControls(); });
   nextBtn.addEventListener('click', () => { navigate(1); showControls(); });
+  comicLinks.forEach((link) => link.addEventListener('click', navigateToComic));
   btnSpread.addEventListener('click', () => { toggleSpread(); showControls(); });
   btnCoverSep.addEventListener('click', () => { toggleCoverSep(); showControls(); });
 

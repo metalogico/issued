@@ -13,6 +13,7 @@ Host your digital comics (CBZ/CBR/CB7/PDF files) on your home server and read th
 - 🌐 **Web reader** – Read in your browser without installing anything (on mobile too!)
 - 🌙 **Light and dark themes** – Follow your system preference or switch manually
 - 🔖 **Ongoing series** – Mark active series and quickly see new issues, totals, and possible gaps
+- ▶️ **Continue a series** – Resume the latest issue in progress or start the next unread issue
 - ⚡ **Easy setup** – One command to get started
 
 ## Supported Formats
@@ -230,6 +231,7 @@ From the web reader you can browse folders, search your library, read comics, ed
 - Use **Continue Reading** to jump back into comics you have started but not finished.
 - Mark comics as done from the grid or table view.
 - When you are inside a series folder, use **Mark all as completed** if you want to mark the whole series as done.
+- In a series folder, use **Continue series** to resume the most recently opened unfinished issue or start the first unread one. The reader also links to the previous and next issue and offers the next cover when you reach the end.
 
 ### Ongoing series
 

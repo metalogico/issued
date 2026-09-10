@@ -3,7 +3,10 @@
 {% block body_class %}reader-page{% endblock %}
 {% block content %}
 <div class="reader fade-in flex min-h-[100dvh] flex-col sm:min-h-[calc(100vh-5rem)]" data-comic-uuid="{{ comic_uuid }}"
-  data-page-count="{{ page_count }}" data-initial-page="{{ initial_page }}" tabindex="0"
+  data-page-count="{{ page_count }}" data-initial-page="{{ initial_page }}"
+  data-was-completed="{{ 'true' if was_completed else 'false' }}"
+  {% if series_navigation %}data-navigation-url="{{ url_path(request, 'api_comic_navigation', comic_uuid=comic_uuid) }}?context=series"{% endif %}
+  tabindex="0"
   title="Tap left/right or use arrow keys to navigate">
 
   <div
@@ -38,6 +41,13 @@
             <span class="reader-page-of"> of </span><span class="reader-page-separator" aria-hidden="true">/</span>
             <span id="reader-page-total">{{ page_count }}</span>
           </span>
+          {% if series_navigation %}
+          <span class="whitespace-nowrap text-xs font-medium text-gray-500"
+            aria-label="Issue {{ series_navigation.position }} of {{ series_navigation.total }} in this series">
+            <span aria-hidden="true">·</span>
+            <span class="hidden sm:inline">Issue </span>{{ series_navigation.position }} of {{ series_navigation.total }}
+          </span>
+          {% endif %}
           <div class="reader-progress-wrap flex-1 max-w-xs" id="reader-progress-wrap" title="Click to jump to page">
             <div class="progress-bar h-2 rounded-full overflow-hidden">
               <div id="reader-progress"
@@ -117,6 +127,13 @@
       aria-label="Close reader actions"></button>
   </div>
 
+  {% if series_navigation %}
+  <div id="reader-progress-error" class="mb-3 hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+    role="alert" aria-live="assertive">
+    Reading progress could not be saved. Please try again before leaving this issue.
+  </div>
+  {% endif %}
+
   <div
     class="reader-image-wrap flex min-h-[50vh] flex-1 items-center justify-center overflow-hidden rounded-2xl bg-gray-900 p-2 shadow-2xl cursor-pointer touch-manipulation select-none sm:min-h-[500px] sm:rounded-3xl sm:p-4"
     role="img" aria-label="Comic page – tap near an edge to navigate, double-tap the center to zoom"
@@ -132,6 +149,45 @@
         draggable="false">
     </div>
   </div>
+
+  {% if series_navigation %}
+  <section id="reader-series-end" class="mt-4 hidden rounded-2xl border border-violet-200 bg-white p-4 shadow-lg sm:p-5"
+    aria-live="polite">
+    {% if series_navigation.next %}
+    <div class="flex items-center gap-4">
+      <img src="{{ series_navigation.next.thumbnail_url }}" alt=""
+        class="h-28 w-20 shrink-0 rounded-lg bg-gray-100 object-cover shadow"
+        onerror="this.classList.add('invisible')">
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-semibold uppercase tracking-wide text-violet-600">Up next</p>
+        <h2 class="mt-1 truncate text-lg font-bold text-gray-900">
+          {{ series_navigation.next.title or series_navigation.next.filename }}
+        </h2>
+        {% if series_navigation.missing_issues_to_next %}
+        <p class="mt-1 text-sm font-medium text-amber-700">
+          Missing issue{% if series_navigation.missing_issues_to_next|length > 1 %}s{% endif %}:
+          {{ series_navigation.missing_issues_to_next|join(', ') }}
+        </p>
+        {% endif %}
+        <a href="{{ series_navigation.next.reader_url }}"
+          class="reader-comic-link mt-3 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700">
+          Read next issue
+          <i data-lucide="arrow-right" class="h-4 w-4"></i>
+        </a>
+      </div>
+    </div>
+    {% else %}
+    <div class="text-center">
+      <i data-lucide="circle-check" class="mx-auto h-10 w-10 text-emerald-500"></i>
+      <h2 class="mt-2 text-lg font-bold text-gray-900">End of series</h2>
+      <a href="{{ series_navigation.return_url }}"
+        class="mt-3 inline-flex items-center gap-2 rounded-xl border border-violet-200 px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50">
+        Back to series
+      </a>
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
 
   <nav class="reader-navigation mt-4 flex justify-center gap-3 sm:mt-6 sm:gap-4"
     style="transition: transform 0.3s ease, opacity 0.3s ease;">

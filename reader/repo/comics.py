@@ -24,6 +24,35 @@ def get_comics_in_folder(conn, folder_id: int) -> list[dict]:
     return [dict(row) for row in cur.fetchall()]
 
 
+def get_series_comics(conn, folder_id: int) -> list[dict]:
+    """Return the fields needed to build a series reading sequence."""
+    cur = conn.execute(
+        """
+        SELECT c.uuid, c.filename, c.page_count, c.folder_id,
+               m.title, m.issue_number, m.current_page, m.last_read_at,
+               COALESCE(m.is_completed, 0) AS is_completed
+        FROM comics c
+        LEFT JOIN metadata m ON m.comic_id = c.id
+        WHERE c.folder_id = ?
+        """,
+        (folder_id,),
+    )
+    return [dict(row) for row in cur.fetchall()]
+
+
+def get_series_comics_for_comic(conn, comic_uuid: str) -> tuple[int, list[dict]] | None:
+    """Return the containing folder and its direct comics for ``comic_uuid``."""
+    cur = conn.execute(
+        "SELECT folder_id FROM comics WHERE uuid = ?",
+        (comic_uuid,),
+    )
+    row = cur.fetchone()
+    if not row or row["folder_id"] is None:
+        return None
+    folder_id = int(row["folder_id"])
+    return folder_id, get_series_comics(conn, folder_id)
+
+
 def get_last_added_comics(conn, limit: int = 24) -> list[dict]:
     """Comics ordered by last_scanned_at DESC with is_completed."""
     cur = conn.execute(

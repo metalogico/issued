@@ -15,6 +15,8 @@ from .comics import (
     get_comics_in_folder,
     get_last_added_comics,
     get_continue_reading_comics,
+    get_series_comics,
+    get_series_comics_for_comic,
     search_comics,
     search_comics_grouped,
 )
@@ -54,6 +56,7 @@ __all__ = [
     "get_subfolders_with_item_count", "get_breadcrumbs_for_folder",
     "get_folder_preview_thumbnails",
     "get_comics_in_folder", "get_last_added_comics", "get_continue_reading_comics",
+    "get_series_comics", "get_series_comics_for_comic",
     "search_comics", "search_comics_grouped",
     "get_comic_id_by_uuid", "get_folder_id_for_comic", "get_initial_page",
     "get_metadata", "ensure_metadata_row", "update_metadata",

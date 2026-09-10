@@ -62,6 +62,21 @@
 
   {% if folder_id is defined and folder_id and is_leaf %}
   <div class="mb-4 flex flex-wrap items-center gap-2">
+    {% if series_continue and series_continue.status == 'ready' %}
+    <a href="{{ series_continue.target_url }}"
+      class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] touch-manipulation"
+      title="{% if series_continue.resume %}Resume {{ series_continue.target.filename }}{% else %}Start {{ series_continue.target.filename }}{% endif %}">
+      <i data-lucide="play" class="h-4 w-4"></i>
+      Continue series
+    </a>
+    {% elif series_continue and series_continue.status == 'all_read' %}
+    <span
+      class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700"
+      aria-label="All comics in this series are completed">
+      <i data-lucide="circle-check" class="h-4 w-4"></i>
+      All read
+    </span>
+    {% endif %}
     <button type="button"
       class="folder-ongoing-toggle inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold shadow-sm transition active:scale-[0.98] touch-manipulation {% if is_ongoing %}border-violet-600 bg-violet-600 text-white{% else %}border-violet-200 bg-white text-violet-700 hover:bg-violet-50{% endif %}"
       data-folder-id="{{ folder_id }}" data-ongoing="{{ 'true' if is_ongoing else 'false' }}"

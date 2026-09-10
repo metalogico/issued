@@ -10,6 +10,7 @@ from ..database import db_connection
 from ..logging_config import get_logger
 from .feeds import (
     _absolute_href,
+    _catalog_links_xml,
     _comic_entry_xml,
     _comic_media_type,
     _escape_xml,
@@ -18,6 +19,8 @@ from .feeds import (
     _get_library_title,
     _navigation_entry_xml,
     _now_iso,
+    _opensearch_description_xml,
+    _opensearch_response,
     _recent_href,
     _root_href,
     _search_href,
@@ -149,8 +152,7 @@ def opds_root(request: Request) -> Response:
         f"  <id>urn:uuid:root</id>\n"
         f"  <title>{title}</title>\n"
         f"  <updated>{updated}</updated>\n"
-        f"  <link rel=\"self\" href=\"{self_href}\" type=\"application/atom+xml;profile=opds-catalog\" />\n"
-        f"  <link rel=\"start\" href=\"{self_href}\" type=\"application/atom+xml;profile=opds-catalog\" />\n"
+        f"{_catalog_links_xml(base_url, self_href)}\n"
         f"{''.join(entries)}\n"
         "</feed>"
     )
@@ -192,7 +194,6 @@ def opds_folder(folder_id: int, request: Request) -> Response:
     updated = _now_iso()
     base_url = str(request.base_url)
     self_href = _absolute_href(base_url, _folder_href(folder_id))
-    start_href = _absolute_href(base_url, _root_href())
     entries = []
     for sub in subfolders:
         entries.append(
@@ -232,8 +233,7 @@ def opds_folder(folder_id: int, request: Request) -> Response:
         f"  <id>urn:folder:{folder_id}</id>\n"
         f"  <title>{_escape_xml(folder['name'])}</title>\n"
         f"  <updated>{updated}</updated>\n"
-        f"  <link rel=\"self\" href=\"{self_href}\" type=\"application/atom+xml;profile=opds-catalog\" />\n"
-        f"  <link rel=\"start\" href=\"{start_href}\" type=\"application/atom+xml;profile=opds-catalog\" />\n"
+        f"{_catalog_links_xml(base_url, self_href)}\n"
         f"{''.join(entries)}\n"
         "</feed>"
     )
@@ -268,7 +268,6 @@ def opds_recent(request: Request, limit: int = Query(50, ge=1, le=200)) -> Respo
     updated = _now_iso()
     base_url = str(request.base_url)
     self_href = _absolute_href(base_url, _recent_href(limit))
-    start_href = _absolute_href(base_url, _root_href())
 
     entries = []
     for comic in comics:
@@ -295,12 +294,25 @@ def opds_recent(request: Request, limit: int = Query(50, ge=1, le=200)) -> Respo
         "  <id>urn:recent</id>\n"
         "  <title>Recent</title>\n"
         f"  <updated>{updated}</updated>\n"
-        f"  <link rel=\"self\" href=\"{self_href}\" type=\"application/atom+xml;profile=opds-catalog\" />\n"
-        f"  <link rel=\"start\" href=\"{start_href}\" type=\"application/atom+xml;profile=opds-catalog\" />\n"
+        f"{_catalog_links_xml(base_url, self_href)}\n"
         f"{''.join(entries)}\n"
         "</feed>"
     )
     return _xml_response(xml)
+
+
+@router.get("/opds/search.xml")
+def opds_opensearch(request: Request) -> Response:
+    """OpenSearch description document for OPDS search autodiscovery."""
+    try:
+        config = get_config()
+    except FileNotFoundError:
+        logger.error("config.ini not found while serving OpenSearch description")
+        raise HTTPException(status_code=500, detail="Server not configured")
+
+    title = _get_library_title(config)
+    xml = _opensearch_description_xml(str(request.base_url), title)
+    return _opensearch_response(xml)
 
 
 @router.get("/opds/search")
@@ -336,7 +348,6 @@ def opds_search(request: Request, q: str = Query(..., min_length=1)) -> Response
     updated = _now_iso()
     base_url = str(request.base_url)
     self_href = _absolute_href(base_url, _search_href(q))
-    start_href = _absolute_href(base_url, _root_href())
     entries = []
     for comic in comics:
         updated_ts = comic["last_scanned_at"] or updated
@@ -362,8 +373,7 @@ def opds_search(request: Request, q: str = Query(..., min_length=1)) -> Response
         "  <id>urn:search</id>\n"
         f"  <title>Search: {_escape_xml(q)}</title>\n"
         f"  <updated>{updated}</updated>\n"
-        f"  <link rel=\"self\" href=\"{self_href}\" type=\"application/atom+xml;profile=opds-catalog\" />\n"
-        f"  <link rel=\"start\" href=\"{start_href}\" type=\"application/atom+xml;profile=opds-catalog\" />\n"
+        f"{_catalog_links_xml(base_url, self_href)}\n"
         f"{''.join(entries)}\n"
         "</feed>"
     )

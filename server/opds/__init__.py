@@ -4,6 +4,7 @@ Exposes:
 - GET /opds/                  (root navigation)
 - GET /opds/folder/{folder_id}
 - GET /opds/recent
+- GET /opds/search.xml        (OpenSearch description)
 - GET /opds/search
 - GET /opds/comic/{comic_uuid}/file
 - GET /opds/comic/{comic_uuid}/thumbnail

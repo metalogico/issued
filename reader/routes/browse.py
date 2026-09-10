@@ -2,15 +2,59 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 
 from server.database import db_connection
 from .. import repo
 from .. import services
+from .. import series
 from ._common import templates, _library_title, _reader_auth_enabled, _folder_ongoing_context
 
 router = APIRouter(tags=["reader"])
+
+
+def _comic_reader_path(
+    request: Request,
+    comic: dict,
+    folder_id: int,
+    *,
+    start_from_beginning: bool = False,
+) -> str:
+    path = request.url_for("reader_view", comic_uuid=comic["uuid"]).path
+    query = f"series={folder_id}"
+    if start_from_beginning or comic.get("is_completed"):
+        query += "&start=1"
+    return f"{path}?{query}"
+
+
+def _series_continue_context(request: Request, conn, folder_id: int) -> dict:
+    state = series.get_continue_series(conn, folder_id)
+    target = state.get("target")
+    if target:
+        state["target_url"] = _comic_reader_path(
+            request,
+            target,
+            folder_id,
+            start_from_beginning=not state["resume"],
+        )
+    return state
+
+
+def _series_navigation_context(request: Request, conn, comic_uuid: str) -> dict | None:
+    navigation = series.get_series_navigation(conn, comic_uuid)
+    if navigation is None:
+        return None
+    folder_id = navigation["folder_id"]
+    navigation["return_url"] = request.url_for("browse_folder", folder_id=folder_id).path
+    for direction in ("previous", "next"):
+        comic = navigation[direction]
+        if comic:
+            comic["reader_url"] = _comic_reader_path(request, comic, folder_id)
+            comic["thumbnail_url"] = request.url_for(
+                "get_thumbnail", comic_uuid=comic["uuid"]
+            ).path
+    return navigation
 
 
 # --- Browse: root ---
@@ -28,6 +72,11 @@ def browse_root(request: Request):
             comics = repo.get_comics_in_folder(conn, folder_id)
             continue_reading = repo.get_continue_reading_comics(conn, 12)
             ongoing_ctx = _folder_ongoing_context(conn, folder_id)
+            series_continue = (
+                _series_continue_context(request, conn, folder_id)
+                if ongoing_ctx["is_leaf"]
+                else None
+            )
             return templates.TemplateResponse(
                 request,
                 "browser.html",
@@ -43,6 +92,7 @@ def browse_root(request: Request):
                     "continue_reading_comics": continue_reading,
                     "reader_auth_enabled": _reader_auth_enabled(),
                     "folder_id": folder_id,
+                    "series_continue": series_continue,
                     **ongoing_ctx,
                 },
             )
@@ -165,6 +215,11 @@ def browse_folder(request: Request, folder_id: int):
         comics = repo.get_comics_in_folder(conn, folder_id)
         breadcrumbs = repo.get_breadcrumbs_for_folder(conn, folder_id)
         ongoing_ctx = _folder_ongoing_context(conn, folder_id)
+        series_continue = (
+            _series_continue_context(request, conn, folder_id)
+            if ongoing_ctx["is_leaf"]
+            else None
+        )
 
     return templates.TemplateResponse(
         request,
@@ -181,6 +236,7 @@ def browse_folder(request: Request, folder_id: int):
             "continue_reading_comics": [],
             "reader_auth_enabled": _reader_auth_enabled(),
             "folder_id": folder_id,
+            "series_continue": series_continue,
             **ongoing_ctx,
         },
     )
@@ -190,19 +246,44 @@ def browse_folder(request: Request, folder_id: int):
 
 
 @router.get("/comic/{comic_uuid}")
-def reader_view(request: Request, comic_uuid: str):
+def reader_view(
+    request: Request,
+    comic_uuid: str,
+    start: bool = False,
+    series_id: int | None = Query(default=None, alias="series"),
+):
     """Reader page: open a comic and flip through pages."""
     comic = services.get_comic_by_uuid(comic_uuid)
     if not comic:
+        if series_id is not None:
+            with db_connection() as conn:
+                folder = repo.get_folder(conn, series_id)
+            if folder:
+                return templates.TemplateResponse(
+                    request,
+                    "reader-error.html",
+                    {
+                        "title": f"Comic unavailable — {_library_title()}",
+                        "message": "This comic is no longer available in the library.",
+                        "return_url": request.url_for(
+                            "browse_folder", folder_id=series_id
+                        ).path,
+                        "return_label": f"Back to {folder['name']}",
+                        "reader_auth_enabled": _reader_auth_enabled(),
+                    },
+                    status_code=404,
+                )
         raise HTTPException(status_code=404, detail="Comic not found")
 
     page_count = comic["page_count"] or 1
     with db_connection() as conn:
-        initial_page = repo.get_initial_page(conn, comic_uuid, page_count)
+        initial_page = 1 if start else repo.get_initial_page(conn, comic_uuid, page_count)
         folder_id = repo.get_folder_id_for_comic(conn, comic_uuid)
         breadcrumbs = repo.get_breadcrumbs_for_folder(conn, folder_id) if folder_id else []
         metadata = repo.get_metadata(conn, comic_uuid)
         issue_title = (metadata or {}).get("title")
+        progress = repo.get_progress(conn, comic_uuid)
+        series_navigation = _series_navigation_context(request, conn, comic_uuid)
 
     return templates.TemplateResponse(
         request,
@@ -215,6 +296,8 @@ def reader_view(request: Request, comic_uuid: str):
             "issue_title": issue_title,
             "page_count": page_count,
             "initial_page": initial_page,
+            "was_completed": bool((progress or {}).get("is_completed")),
+            "series_navigation": series_navigation,
             "reader_auth_enabled": _reader_auth_enabled(),
         },
     )

@@ -45,3 +45,6 @@ data/
 .claude/
 .windsurf/
 skills-lock.json
+
+# Local development plans
+.notes/

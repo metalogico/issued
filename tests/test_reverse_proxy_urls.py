@@ -178,3 +178,8 @@ def test_opds_feed_keeps_absolute_public_urls(proxy_app):
 
     assert response.status_code == 200
     assert 'href="https://issued.example.com/opds/"' in response.text
+    assert 'href="https://issued.example.com/opds/search.xml"' in response.text
+
+    osd = client.get("/opds/search.xml")
+    assert osd.status_code == 200
+    assert 'template="https://issued.example.com/opds/search?q={searchTerms}"' in osd.text

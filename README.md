@@ -97,6 +97,8 @@ Change `/path/to/your/comics` to your comics folder:
 docker compose up -d
 ```
 
+If the comics folder is not mounted yet (for example the NAS is still coming up), Issued waits and leaves the database untouched. The web UI and OPDS catalog start only after the library is visible.
+
 **Done!** Your comics are now available at:
 - 📱 **Mobile apps**: `http://YOUR-SERVER-IP:8181/opds/`
 - 🌐 **Web reader**: `http://YOUR-SERVER-IP:8181/reader/`
@@ -269,11 +271,21 @@ Or manually scan from the command line:
 ./issued scan --force
 ```
 
+If you really emptied the comics folder and want the database to drop those entries, use `./issued scan --prune`. Without `--prune`, Issued will refuse to wipe the library when the folder looks unmounted or empty.
+
 ### Check library stats
 
 ```bash
 ./issued stats
 ```
+
+### Generate missing thumbnails
+
+```bash
+./issued thumbnails
+```
+
+Only comics without a thumbnail — or whose thumbnail file is missing — are processed.
 
 ### Regenerate all thumbnails
 

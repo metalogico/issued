@@ -23,7 +23,7 @@ from server.migrations import (
 from server.monitor import start_file_monitoring
 from server.opds import run_server
 from server.repository import Repository
-from server.scanner import scan_library
+from server.scanner import LibraryUnavailableError, scan_library, wait_for_library
 from server.thumbnails import cleanup_orphaned_thumbnails, generate_thumbnails
 from server.models import Folder
 from server.logging_config import setup_logging
@@ -104,12 +104,21 @@ def init(
 def scan(
     force: bool = typer.Option(False, "--force", help="Force full rescan"),
     path: Optional[Path] = typer.Option(None, "--path", help="Scan a subfolder"),
+    prune: bool = typer.Option(
+        False,
+        "--prune",
+        help="Allow deleting all comics if the library folder is empty",
+    ),
 ) -> None:
     """Scan library and update database."""
     setup_logging()
     
     config = _ensure_config()
-    stats = scan_library(config, path=path, force=force)
+    try:
+        stats = scan_library(config, path=path, force=force, prune=prune)
+    except LibraryUnavailableError as exc:
+        typer.echo(f"[ERROR] {exc}")
+        raise typer.Exit(code=1)
 
     typer.echo(
         "✓ Scan completed: "
@@ -149,6 +158,8 @@ def serve(
     if ensure_tags_tables():
         logger.info("tags/comic_tags tables were missing and have been repaired.")
 
+    wait_for_library(config)
+
     # Initial scan on startup (populates DB if empty or picks up changes)
     logger.info("Running initial library scan...")
     stats = scan_library(config)
@@ -175,9 +186,13 @@ def serve(
 
 @app.command()
 def thumbnails(
-    regenerate: bool = typer.Option(False, "--regenerate", help="Regenerate all thumbnails"),
+    regenerate: bool = typer.Option(
+        False,
+        "--regenerate",
+        help="Regenerate all thumbnails instead of only missing ones",
+    ),
 ) -> None:
-    """Generate missing (or all) thumbnails."""
+    """Generate missing thumbnails (default) or all with --regenerate."""
     setup_logging()
     
     config = _ensure_config()

@@ -132,7 +132,11 @@ def cleanup_orphaned_thumbnails(config: IssuedConfig) -> int:
 
 
 def generate_thumbnails(config: IssuedConfig, regenerate: bool = False) -> None:
-    """Generate missing (or all) thumbnails based on DB contents."""
+    """Generate missing (or all) thumbnails based on DB contents.
+
+    Missing means ``thumbnail_generated`` is false or the ``.webp`` file
+    is absent on disk.
+    """
     with Session(get_engine()) as session:
         repo = Repository(session, config.library_path)
         
@@ -141,12 +145,21 @@ def generate_thumbnails(config: IssuedConfig, regenerate: bool = False) -> None:
             comics = repo.get_all_comics()
         else:
             logger.info("Generating missing thumbnails...")
-            comics = repo.get_missing_thumbnails_comics()
+            comics = [
+                comic
+                for comic in repo.get_all_comics()
+                if not comic.thumbnail_generated
+                or not (config.thumbnails_dir / f"{comic.uuid}.webp").exists()
+            ]
 
         total = len(comics)
         logger.info(f"{total} comics to process for thumbnails")
 
         from .path_utils import to_absolute
+
+        generated = 0
+        skipped = 0
+        failed = 0
 
         for idx, comic in enumerate(comics, start=1):
             path = to_absolute(comic.path, config.library_path)
@@ -154,10 +167,12 @@ def generate_thumbnails(config: IssuedConfig, regenerate: bool = False) -> None:
             logger.debug(f"[{idx}/{total}] {short_path(path)}")
             if not path.exists():
                 logger.warning(f"Comic file not found on disk: {path}")
+                skipped += 1
                 continue
 
             img_bytes = _extract_first_image_bytes(path)
             if not img_bytes:
+                failed += 1
                 continue
 
             thumb_path = config.thumbnails_dir / f"{comic.uuid}.webp"
@@ -171,10 +186,15 @@ def generate_thumbnails(config: IssuedConfig, regenerate: bool = False) -> None:
                 )
             except Exception as exc:
                 logger.error(f"Failed to save thumbnail for {short_path(path)}: {exc}")
+                failed += 1
                 continue
 
             if comic.id is not None:
                 repo.set_thumbnail_generated(comic.id, True)
                 repo.commit()
+            generated += 1
 
-        logger.info("Thumbnail generation complete.")
+        logger.info(
+            "Thumbnail generation complete: "
+            f"{generated} generated, {skipped} skipped, {failed} failed."
+        )

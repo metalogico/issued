@@ -12,24 +12,33 @@ from __future__ import annotations
 
 import os
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Iterator, Optional, Tuple
 
+from sqlmodel import Session, col, func, select
+
+from .archive import ComicFormat, detect_archive_format, get_archive
+from .comicinfo import ComicMetadataUpdate, read_comicinfo_from_archive
 from .config import IssuedConfig
 from .database import get_engine, init_db
 from .logging_config import get_logger
+from .models import Comic, Folder
+from .path_utils import to_absolute, to_relative
 from .repository import Repository
 from .thumbnails import generate_thumbnail_for_comic
-from .comicinfo import read_comicinfo_from_archive, ComicMetadataUpdate
-from .archive import ComicFormat, detect_archive_format, get_archive
 from .utils import delete_thumbnails, short_path
-from sqlmodel import Session
 
 logger = get_logger(__name__)
 
 
 COMIC_EXTENSIONS = {".cbz", ".cbr", ".cb7", ".pdf"}
+LIBRARY_WAIT_INTERVAL = 5.0
+
+
+class LibraryUnavailableError(RuntimeError):
+    """Raised when the comics folder is missing or looks unmounted."""
 
 
 def _natural_sort_key(value: str) -> list[object]:
@@ -51,6 +60,61 @@ def _path_natural_sort_key(path: Path) -> list[object]:
 def is_comic_file(path: Path) -> bool:
     """Return True if the path looks like a supported comic archive."""
     return path.suffix.lower() in COMIC_EXTENSIONS
+
+
+def library_is_ready(config: IssuedConfig) -> bool:
+    """Return True if the library path is safe to scan and serve.
+
+    Ready when the path exists and either the database is empty (first run)
+    or at least one comic file is visible on disk.
+    """
+    try:
+        root = config.library_path.resolve()
+    except OSError:
+        return False
+
+    if not root.exists() or not root.is_dir():
+        return False
+
+    init_db()
+    with Session(get_engine()) as session:
+        db_count = session.exec(select(func.count()).select_from(Comic)).one()
+
+    if db_count == 0:
+        return True
+
+    ignore_patterns = tuple(config.scanner.ignore_patterns)
+    for _, comic_files in walk_library(root, ignore_patterns):
+        if comic_files:
+            return True
+    return False
+
+
+def wait_for_library(
+    config: IssuedConfig,
+    interval: float = LIBRARY_WAIT_INTERVAL,
+) -> None:
+    """Block until the comics folder is mounted and visible.
+
+    Does not start HTTP, monitoring, or a scan while waiting. The database
+    is left untouched.
+    """
+    if library_is_ready(config):
+        return
+
+    logger.error(
+        "Waiting for library at %s (mount not ready, database left untouched)",
+        config.library_path,
+    )
+    while True:
+        time.sleep(interval)
+        if library_is_ready(config):
+            logger.info("Library mount is ready at %s", config.library_path)
+            return
+        logger.warning(
+            "Waiting for library at %s (mount not ready, database left untouched)",
+            config.library_path,
+        )
 
 
 def _should_ignore(name: str, ignore_patterns: Iterable[str]) -> bool:
@@ -391,26 +455,35 @@ def scan_library(
     config: IssuedConfig,
     path: Optional[Path] = None,
     force: bool = False,
+    prune: bool = False,
 ) -> dict:
     """Scan the comic library and sync to the database.
 
     :param config: Loaded Issued configuration.
     :param path: Optional subfolder to limit scan.
     :param force: If True, ignore incremental optimizations.
+    :param prune: If True, allow deleting DB comics even when the library
+        folder looks empty/unmounted. Default is to refuse that case.
     :return: Dictionary with scan statistics (added, updated, deleted, skipped).
     """
     base = (path or config.library_path).resolve()
     if not base.exists():
         raise FileNotFoundError(f"Library path does not exist: {base}")
 
+    # Ensure DB is initialized before the readiness check (needs comic count).
+    init_db()
+
+    if not prune and not library_is_ready(config):
+        raise LibraryUnavailableError(
+            f"Library path is not ready (missing or empty mount?): {config.library_path}. "
+            "Database left untouched."
+        )
+
     ignore_patterns = tuple(config.scanner.ignore_patterns)
     library_root = config.library_path.resolve()
 
     stats = {"added": 0, "updated": 0, "deleted": 0, "skipped": 0}
     processed_paths: set[Path] = set()
-
-    # Ensure DB is initialized (schema created)
-    init_db()
 
     with Session(get_engine()) as session:
         repo = Repository(session, config.library_path)
@@ -440,10 +513,6 @@ def scan_library(
 
         # Handle deleted files
         # Comics in DB under 'base' that were not processed and don't exist on disk
-        from sqlmodel import select, col
-        from .models import Comic, Folder
-        from .path_utils import to_relative, to_absolute
-
         base_rel_str = to_relative(base, library_root).rstrip("/")
 
         if base == library_root:

@@ -62,6 +62,37 @@ def test_reader_scan_endpoint_returns_stats(tmp_path, monkeypatch):
     }
 
 
+def test_reader_scan_endpoint_returns_503_when_library_unavailable(tmp_path, monkeypatch):
+    from server.scanner import LibraryUnavailableError
+
+    config = _test_config(tmp_path)
+    api_library_module = importlib.import_module("reader.routes.api_library")
+
+    db_file = tmp_path / "test.db"
+    monkeypatch.setattr("server.database.DB_PATH", db_file, raising=True)
+    monkeypatch.setattr(
+        "server.database.engine",
+        create_engine(f"sqlite:///{db_file}", connect_args={"check_same_thread": False}),
+        raising=True,
+    )
+    init_db()
+
+    monkeypatch.setattr("server.opds.get_config", lambda: config)
+    monkeypatch.setattr(api_library_module, "get_config", lambda: config)
+
+    def _raise(_cfg):
+        raise LibraryUnavailableError("Library path is not ready. Database left untouched.")
+
+    monkeypatch.setattr(api_library_module, "scan_library", _raise)
+
+    client = TestClient(app)
+    response = client.post("/reader/api/library/scan")
+
+    assert response.status_code == 503
+    assert "Database left untouched" in response.json()["detail"]
+
+
+
 def test_reader_root_renders_scan_button(tmp_path, monkeypatch):
     config = _test_config(tmp_path)
     common_module = importlib.import_module("reader.routes._common")

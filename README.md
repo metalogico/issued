@@ -35,6 +35,15 @@ All formats support:
 - ✅ Full compatibility with OPDS readers and web reader
 - ✅ Reading progress tracking
 
+## OPDS Features
+
+- **Browse your library** – Navigate folders and series, with cover previews and a recent additions feed.
+- **Search** – Find comics by filename or metadata, with OpenSearch discovery for compatible apps.
+- **Download originals** – Download complete comic archives or PDFs.
+- **Page streaming (OPDS-PSE 1.2)** – Read individual pages in compatible apps without downloading the whole comic. Existing OPDS download links remain available.
+
+> PSE pages are served as JPEG. Existing JPEGs are passed through unchanged; other page images are converted on the fly at high quality, without resizing or modifying the original files. Streaming pages does not update reading progress.
+
 ## Collection view
 <img width="2314" height="1998" alt="image" src="https://github.com/user-attachments/assets/3e69bb33-28e4-4bcd-ad35-b2b29a4b1ff4" />
 
@@ -96,6 +105,8 @@ Change `/path/to/your/comics` to your comics folder:
 ```bash
 docker compose up -d
 ```
+
+If the comics folder is not mounted yet (for example the NAS is still coming up), Issued waits and leaves the database untouched. The web UI and OPDS catalog start only after the library is visible.
 
 **Done!** Your comics are now available at:
 - 📱 **Mobile apps**: `http://YOUR-SERVER-IP:8181/opds/`
@@ -216,6 +227,51 @@ This will:
 
 Compatible OPDS clients discover library search automatically via OpenSearch.
 
+Issued supports **OPDS Page Streaming Extension (OPDS-PSE) 1.2** in folder,
+recent, and search feeds. This extends the existing Atom OPDS catalog; it does
+not add OPDS 2. Clients can read or download individual pages without downloading
+the original comic archive.
+
+- Endpoint: `GET /opds/comic/{comic_uuid}/page/{page_number}`.
+- Page numbering is **0-based**, from `0` to `N-1`. The web reader API remains
+  **1-based** at `/reader/api/comic/{comic_uuid}/page/{page_num}`.
+- Every successful PSE response is `image/jpeg`. Original JPEG bytes are
+  preserved; other supported page images (including PNG and WebP, and rendered
+  PDF pages) are converted with Pillow at quality 95, without chroma subsampling
+  or resizing. Transparency is composited on white; animated images use their
+  first frame. Conversion can introduce JPEG compression loss.
+- The feed uses the scanned database page count. If it is missing or invalid,
+  the entry retains its existing links but omits PSE until a scan records a
+  positive count. Building feeds never opens archives to count pages. A direct
+  page request uses the actual archive contents and does not update the count.
+- Streaming, preloading, and downloading pages **never save reading progress**.
+  Existing Issued progress APIs remain responsible for that. No `pse:lastRead`,
+  `pse:lastReadDate`, or `{maxWidth}` capability is advertised.
+
+Example link for a 24-page comic (the feed declares
+`xmlns:pse="http://vaemendis.net/opds-pse/ns"`):
+
+```xml
+<link rel="http://vaemendis.net/opds-pse/stream"
+      type="image/jpeg"
+      href="https://issued.example.com/opds/comic/abc123/page/{pageNumber}"
+      pse:count="24" />
+```
+
+**Access:** the page endpoint follows the existing OPDS access model: it is
+accessible without a reader session cookie, including when reader password
+protection is enabled. It never redirects to the reader login. Any access
+control provided by your reverse proxy continues to apply. Public URLs use the
+same forwarded host/protocol configuration described below.
+
+Responses use `Cache-Control: private, max-age=3600`. Missing comics/files and
+out-of-range pages return 404; non-integer page parameters return 422; unreadable
+archives/images return 500; unavailable extraction backends return 503. Errors
+are JSON and do not include filesystem paths. No persistent page cache is added.
+
+See the [OPDS-PSE 1.2 specification](https://anansi-project.github.io/docs/opds-pse/specs/v1.2).
+
+
 > **Finding your IP:** 
 > - macOS/Linux: Run `ifconfig` or `ip addr`
 > - Windows: Run `ipconfig`
@@ -269,11 +325,21 @@ Or manually scan from the command line:
 ./issued scan --force
 ```
 
+If you really emptied the comics folder and want the database to drop those entries, use `./issued scan --prune`. Without `--prune`, Issued will refuse to wipe the library when the folder looks unmounted or empty.
+
 ### Check library stats
 
 ```bash
 ./issued stats
 ```
+
+### Generate missing thumbnails
+
+```bash
+./issued thumbnails
+```
+
+Only comics without a thumbnail — or whose thumbnail file is missing — are processed.
 
 ### Regenerate all thumbnails
 

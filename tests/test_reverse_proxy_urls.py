@@ -183,3 +183,34 @@ def test_opds_feed_keeps_absolute_public_urls(proxy_app):
     osd = client.get("/opds/search.xml")
     assert osd.status_code == 200
     assert 'template="https://issued.example.com/opds/search?q={searchTerms}"' in osd.text
+
+
+def test_pse_links_use_forwarded_public_origin(proxy_app):
+    import xml.etree.ElementTree as ET
+    from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+    from server.opds.feeds import PSE_NAMESPACE, PSE_REL
+
+    _, engine, _ = proxy_app
+    with Session(engine) as session:
+        folder = Folder(name='Series', path='Series')
+        session.add(folder)
+        session.commit()
+        session.refresh(folder)
+        folder_id = folder.id
+        session.add(Comic(uuid='proxy-pse', filename='Issue.cbz', path='Series/Issue.cbz',
+                          format='cbz', file_size=100, page_count=12,
+                          file_modified_at=datetime.now(timezone.utc), folder_id=folder_id))
+        session.commit()
+    # Mirror Uvicorn trusting the proxy protocol, with nginx forwarding Host.
+    proxied = TestClient(ProxyHeadersMiddleware(app, trusted_hosts='*'),
+                         base_url='http://issued.internal:8181')
+    headers = {'host': 'issued.example.com:8443', 'x-forwarded-proto': 'https'}
+    for url in [f'/opds/folder/{folder_id}', '/opds/recent', '/opds/search?q=Issue']:
+        response = proxied.get(url, headers=headers)
+        root = ET.fromstring(response.content)
+        link = root.find("{http://www.w3.org/2005/Atom}entry/"
+                         f"{{http://www.w3.org/2005/Atom}}link[@rel='{PSE_REL}']")
+        assert link.get('href') == 'https://issued.example.com:8443/opds/comic/proxy-pse/page/{pageNumber}'
+        assert link.get(f'{{{PSE_NAMESPACE}}}count') == '12'
+        assert 'issued.internal' not in response.text
+        assert '%7B' not in response.text

@@ -8,6 +8,7 @@ Exposes:
 - GET /opds/search
 - GET /opds/comic/{comic_uuid}/file
 - GET /opds/comic/{comic_uuid}/thumbnail
+- GET /opds/comic/{comic_uuid}/page/{page_number} (OPDS-PSE 1.2, 0-based JPEG)
 """
 
 from __future__ import annotations

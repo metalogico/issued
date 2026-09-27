@@ -9,6 +9,7 @@ from ..config import get_config
 from ..database import db_connection
 from ..logging_config import get_logger
 from .feeds import (
+    PSE_NAMESPACE,
     _absolute_href,
     _catalog_links_xml,
     _comic_entry_xml,
@@ -148,7 +149,7 @@ def opds_root(request: Request) -> Response:
 
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<feed xmlns="http://www.w3.org/2005/Atom">\n'
+        f'<feed xmlns="http://www.w3.org/2005/Atom" xmlns:pse="{PSE_NAMESPACE}">\n'
         f"  <id>urn:uuid:root</id>\n"
         f"  <title>{title}</title>\n"
         f"  <updated>{updated}</updated>\n"
@@ -178,7 +179,7 @@ def opds_folder(folder_id: int, request: Request) -> Response:
         subfolders = cur.fetchall()
 
         cur = conn.execute(
-            "SELECT c.id, c.uuid, c.filename, c.format, c.last_scanned_at, "
+            "SELECT c.id, c.uuid, c.filename, c.format, c.last_scanned_at, c.page_count, "
             "       COALESCE(m.title, c.filename) AS display_title "
             "FROM comics c "
             "LEFT JOIN metadata m ON m.comic_id = c.id "
@@ -224,12 +225,13 @@ def opds_folder(folder_id: int, request: Request) -> Response:
                 base_url,
                 series_folder_id=series_folder_id,
                 series_name=series_name,
+                page_count=comic["page_count"],
             )
         )
 
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<feed xmlns="http://www.w3.org/2005/Atom">\n'
+        f'<feed xmlns="http://www.w3.org/2005/Atom" xmlns:pse="{PSE_NAMESPACE}">\n'
         f"  <id>urn:folder:{folder_id}</id>\n"
         f"  <title>{_escape_xml(folder['name'])}</title>\n"
         f"  <updated>{updated}</updated>\n"
@@ -245,7 +247,7 @@ def opds_recent(request: Request, limit: int = Query(50, ge=1, le=200)) -> Respo
     """Acquisition feed of recent comics."""
     with db_connection() as conn:
         cur = conn.execute(
-            "SELECT c.id, c.uuid, c.filename, c.format, c.last_scanned_at, "
+            "SELECT c.id, c.uuid, c.filename, c.format, c.last_scanned_at, c.page_count, "
             "       c.folder_id, f.name AS folder_name, "
             "       COALESCE(m.title, c.filename) AS display_title "
             "FROM comics c "
@@ -285,12 +287,13 @@ def opds_recent(request: Request, limit: int = Query(50, ge=1, le=200)) -> Respo
                 base_url,
                 series_folder_id=comic["folder_id"] if is_series else None,
                 series_name=comic["folder_name"] if is_series else None,
+                page_count=comic["page_count"],
             )
         )
 
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<feed xmlns="http://www.w3.org/2005/Atom">\n'
+        f'<feed xmlns="http://www.w3.org/2005/Atom" xmlns:pse="{PSE_NAMESPACE}">\n'
         "  <id>urn:recent</id>\n"
         "  <title>Recent</title>\n"
         f"  <updated>{updated}</updated>\n"
@@ -322,7 +325,7 @@ def opds_search(request: Request, q: str = Query(..., min_length=1)) -> Response
 
     with db_connection() as conn:
         cur = conn.execute(
-            "SELECT c.id, c.uuid, c.filename, c.format, c.last_scanned_at, "
+            "SELECT c.id, c.uuid, c.filename, c.format, c.last_scanned_at, c.page_count, "
             "       c.folder_id, f.name AS folder_name, "
             "       COALESCE(m.title, c.filename) AS display_title "
             "FROM comics c "
@@ -364,12 +367,13 @@ def opds_search(request: Request, q: str = Query(..., min_length=1)) -> Response
                 base_url,
                 series_folder_id=comic["folder_id"] if is_series else None,
                 series_name=comic["folder_name"] if is_series else None,
+                page_count=comic["page_count"],
             )
         )
 
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<feed xmlns="http://www.w3.org/2005/Atom">\n'
+        f'<feed xmlns="http://www.w3.org/2005/Atom" xmlns:pse="{PSE_NAMESPACE}">\n'
         "  <id>urn:search</id>\n"
         f"  <title>Search: {_escape_xml(q)}</title>\n"
         f"  <updated>{updated}</updated>\n"
@@ -426,3 +430,27 @@ def get_thumbnail(comic_uuid: str):
     if not thumb_path.exists():
         raise HTTPException(status_code=404, detail="Thumbnail not found")
     return FileResponse(thumb_path, media_type="image/webp")
+
+
+@router.get("/opds/comic/{comic_uuid}/page/{page_number}")
+def stream_comic_page(comic_uuid: str, page_number: int) -> Response:
+    """OPDS-PSE 1.2: public 0-based JPEG pages; never persist reading progress."""
+    from reader import services
+    from .images import page_as_jpeg
+
+    try:
+        data, _ = services.extract_page_image(comic_uuid, page_number)
+        jpeg = page_as_jpeg(data)
+    except services.PageNotFoundError:
+        raise HTTPException(status_code=404, detail="Page not found") from None
+    except services.PageDependencyError:
+        logger.exception("Page extraction backend unavailable for comic %s", comic_uuid)
+        raise HTTPException(status_code=503, detail="Page extraction unavailable") from None
+    except Exception:
+        logger.exception("Cannot stream page %s of comic %s", page_number, comic_uuid)
+        raise HTTPException(status_code=500, detail="Unable to read page") from None
+    return Response(
+        content=jpeg,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "private, max-age=3600"},
+    )

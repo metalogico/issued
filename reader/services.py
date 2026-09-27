@@ -65,28 +65,61 @@ def get_comic_by_uuid(comic_uuid: str) -> Optional[dict]:
     }
 
 
-def get_page_image(comic_uuid: str, page_index: int) -> Optional[tuple[bytes, str]]:
-    """Return (image_bytes, content_type) for comic page at 0-based index.
+class PageNotFoundError(Exception):
+    """Comic, file, or requested page does not exist."""
 
-    Extracts the single requested page directly from the archive.
+
+class PageExtractionError(Exception):
+    """An existing page could not be extracted."""
+
+
+class PageDependencyError(PageExtractionError):
+    """A required archive backend is unavailable."""
+
+
+def extract_page_image(comic_uuid: str, page_index: int) -> tuple[bytes, str]:
+    """Read one 0-based page without counting pages separately or writing progress.
+
+    The actual archive listing is authoritative, even with missing/stale DB counts.
+    Errors are explicit so callers can choose their own HTTP contract.
     """
     if page_index < 0:
-        return None
-
-    comic = get_comic_by_uuid(comic_uuid)
-    if not comic:
-        return None
-
+        raise PageNotFoundError()
+    config = get_config()
+    with db_connection() as conn:
+        comic = conn.execute(
+            "SELECT path FROM comics WHERE uuid = ?", (comic_uuid,)
+        ).fetchone()
+    if comic is None:
+        raise PageNotFoundError()
+    path = to_absolute(comic["path"], config.library_path)
     try:
-        with get_archive(comic["path"]) as archive:
-            names = archive.list_images()
-            names.sort(key=_natural_sort_key)
+        with get_archive(path) as archive:
+            names = sorted(archive.list_images(), key=_natural_sort_key)
             if page_index >= len(names):
-                return None
+                raise PageNotFoundError()
             name = names[page_index]
-            data = archive.read(name)
-            suffix = Path(name).suffix.lower()
-            content_type = _CONTENT_TYPES.get(suffix, "image/jpeg")
-            return data, content_type
-    except Exception:
+            return archive.read(name), _CONTENT_TYPES.get(
+                Path(name).suffix.lower(), "image/jpeg"
+            )
+    except PageNotFoundError:
+        raise
+    except FileNotFoundError as exc:
+        raise PageNotFoundError() from exc
+    except ImportError as exc:
+        raise PageDependencyError() from exc
+    except Exception as exc:
+        # rarfile raises this when no external RAR extraction tool is available.
+        from server.archive import rarfile
+
+        if rarfile is not None and isinstance(exc, rarfile.RarCannotExec):
+            raise PageDependencyError() from exc
+        raise PageExtractionError() from exc
+
+
+def get_page_image(comic_uuid: str, page_index: int) -> Optional[tuple[bytes, str]]:
+    """Reader-compatible adapter: original bytes/MIME, None for unavailable pages."""
+    try:
+        return extract_page_image(comic_uuid, page_index)
+    except (PageNotFoundError, PageExtractionError):
         return None

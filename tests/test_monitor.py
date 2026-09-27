@@ -1,11 +1,32 @@
 """Tests for filesystem monitoring."""
 
+import queue
 import time
 from pathlib import Path
+from threading import Event, Thread
 
-import pytest
+from server.config import (
+    IssuedConfig,
+    LibraryConfig,
+    MonitoringConfig,
+    ReaderAuthConfig,
+    ScannerConfig,
+    ServerConfig,
+    ThumbnailConfig,
+)
+from server.monitor import ComicLibraryHandler, MonitorTask, optimize_tasks, process_queue
+from server import monitor
 
-from server.monitor import ComicLibraryHandler, MonitorTask, optimize_tasks
+
+def _make_config(library_path: Path) -> IssuedConfig:
+    return IssuedConfig(
+        library=LibraryConfig(path=library_path, name="Test Library"),
+        server=ServerConfig(),
+        thumbnails=ThumbnailConfig(),
+        scanner=ScannerConfig(),
+        monitoring=MonitoringConfig(enabled=False),
+        reader_auth=ReaderAuthConfig(),
+    )
 
 
 def test_optimize_tasks_deduplicates():
@@ -105,4 +126,61 @@ def test_handler_queues_folder_creation():
     task = task_queue.get()
     assert task.action == "scan_folder"
     assert task.path == Path("/comics/Marvel")
+
+
+def test_process_queue_skips_deletes_when_library_not_ready(tmp_path, monkeypatch):
+    monkeypatch.setattr(monitor, "MONITOR_BATCH_WINDOW", 0)
+    monkeypatch.setattr(monitor, "library_is_ready", lambda cfg: False)
+    deleted = []
+    monkeypatch.setattr(monitor, "delete_path", lambda path, cfg: deleted.append(path))
+    scanned = []
+    monkeypatch.setattr(monitor, "scan_library", lambda cfg: scanned.append("scan"))
+
+    task_queue = queue.Queue()
+    stop_event = Event()
+    task_queue.put(MonitorTask("delete", tmp_path / "issue1.cbz"))
+
+    thread = Thread(
+        target=process_queue,
+        args=(task_queue, _make_config(tmp_path), stop_event),
+        daemon=True,
+    )
+    thread.start()
+    time.sleep(0.2)
+    stop_event.set()
+    thread.join(timeout=2)
+
+    assert deleted == []
+    assert scanned == []
+
+
+def test_process_queue_rescans_when_mount_returns(tmp_path, monkeypatch):
+    monkeypatch.setattr(monitor, "MONITOR_BATCH_WINDOW", 0)
+    state = {"ready": False}
+    monkeypatch.setattr(monitor, "library_is_ready", lambda cfg: state["ready"])
+    deleted = []
+    monkeypatch.setattr(monitor, "delete_path", lambda path, cfg: deleted.append(path))
+    scanned = []
+    monkeypatch.setattr(monitor, "scan_library", lambda cfg: scanned.append("scan"))
+
+    task_queue = queue.Queue()
+    stop_event = Event()
+    task_queue.put(MonitorTask("delete", tmp_path / "issue1.cbz"))
+
+    thread = Thread(
+        target=process_queue,
+        args=(task_queue, _make_config(tmp_path), stop_event),
+        daemon=True,
+    )
+    thread.start()
+    time.sleep(0.2)
+    state["ready"] = True
+    task_queue.put(MonitorTask("delete", tmp_path / "issue2.cbz"))
+    time.sleep(0.2)
+    stop_event.set()
+    thread.join(timeout=2)
+
+    assert deleted == []
+    assert scanned == ["scan"]
+
 

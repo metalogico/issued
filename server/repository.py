@@ -290,6 +290,9 @@ class Repository:
 
     def get_all_comics(self) -> List[Comic]:
          return self.session.exec(select(Comic)).all()
+
+    def count_comics(self) -> int:
+        return self.session.exec(select(func.count()).select_from(Comic)).one()
          
     def get_missing_thumbnails_comics(self) -> List[Comic]:
         return self.session.exec(select(Comic).where(Comic.thumbnail_generated == False)).all()

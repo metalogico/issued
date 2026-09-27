@@ -17,9 +17,20 @@ from watchdog.events import FileSystemEventHandler, FileSystemEvent
 
 from .config import IssuedConfig
 from .logging_config import get_logger
-from .scanner import is_comic_file, scan_folder, scan_file, delete_path, move_path
+from .scanner import (
+    delete_path,
+    is_comic_file,
+    library_is_ready,
+    move_path,
+    scan_file,
+    scan_folder,
+    scan_library,
+)
 
 logger = get_logger(__name__)
+
+
+MONITOR_BATCH_WINDOW = 1.0
 
 
 class MonitorTask(NamedTuple):
@@ -164,8 +175,9 @@ def optimize_tasks(tasks: list[MonitorTask]) -> list[MonitorTask]:
 
 def process_queue(task_queue: queue.Queue, config: IssuedConfig, stop_event: Event) -> None:
     """Worker function to process filesystem events sequentially with batching."""
-    BATCH_WINDOW = 1.0  # Seconds to wait for more events
-    
+    BATCH_WINDOW = MONITOR_BATCH_WINDOW
+    was_ready = True
+
     while not stop_event.is_set():
         try:
             # Block until first task arrives
@@ -186,15 +198,44 @@ def process_queue(task_queue: queue.Queue, config: IssuedConfig, stop_event: Eve
                 # Queue empty, wait a bit to see if more come (debounce burst)
                 time.sleep(0.1)
                 continue
-        
-        optimized_tasks = optimize_tasks(batch)
+
         for _ in range(len(batch)):
             try:
                 task_queue.task_done()
             except ValueError:
                 pass # Ignore if called too many times
 
-        for task in optimized_tasks:
+        ready = library_is_ready(config)
+        if not ready:
+            if was_ready:
+                logger.error(
+                    "Library mount not ready; ignoring filesystem events "
+                    "(database left untouched)"
+                )
+            was_ready = False
+            continue
+
+        if not was_ready:
+            logger.info(
+                "Library mount restored; scanning for updates "
+                "(database was left untouched)"
+            )
+            while True:
+                try:
+                    task_queue.get_nowait()
+                    task_queue.task_done()
+                except queue.Empty:
+                    break
+                except ValueError:
+                    break
+            try:
+                scan_library(config)
+            except Exception as e:
+                logger.error(f"Error scanning library after mount restore: {e}")
+            was_ready = True
+            continue
+
+        for task in optimize_tasks(batch):
             try:
                 if task.action == "scan_folder":
                     scan_folder(task.path, config)

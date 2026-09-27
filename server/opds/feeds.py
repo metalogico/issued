@@ -11,6 +11,10 @@ from fastapi import Response
 from ..config import IssuedConfig
 
 
+PSE_NAMESPACE = "http://vaemendis.net/opds-pse/ns"
+PSE_REL = "http://vaemendis.net/opds-pse/stream"
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
@@ -188,6 +192,7 @@ def _comic_entry_xml(
     *,
     series_folder_id: Optional[int] = None,
     series_name: Optional[str] = None,
+    page_count: int | None = None,
 ) -> str:
     """Build OPDS entry XML for a comic. Adds rel=collection when folder is a series (leaf)."""
     links = [
@@ -203,6 +208,14 @@ def _comic_entry_xml(
             f'          href="{_absolute_href(base_url, _folder_href(series_folder_id))}"'
             f'          type="application/atom+xml;profile=opds-catalog;kind=acquisition"'
             f'          title="{_escape_xml(series_name)}" />',
+        )
+    if type(page_count) is int and page_count > 0:
+        href = _absolute_href(
+            base_url, f"/opds/comic/{comic_uuid}/page/{{pageNumber}}"
+        )
+        links.append(
+            f'    <link rel="{PSE_REL}" type="image/jpeg"'
+            f' href="{_escape_xml(href)}" pse:count="{page_count}" />'
         )
     links_str = "\n".join(links)
     return f"""

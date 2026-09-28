@@ -3,10 +3,15 @@
 
 
 {% block content %}
+{% if navigation_tree is defined %}
+<div class="tree-layout">
+  {% include 'partials/folder-tree.html' %}
+  <div class="tree-content">
+{% endif %}
 <div class="browser fade-in">
   <div class="mb-4 flex items-center justify-between gap-3 sm:mb-6">
     <h1
-      class="bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-2xl font-bold text-transparent sm:text-3xl">
+      class="min-w-0 break-words bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-2xl font-bold text-transparent sm:text-3xl">
       {{ title }}</h1>
 
     <div class="relative shrink-0">
@@ -19,15 +24,24 @@
 
       <div id="display-settings-panel"
         class="absolute right-0 top-12 z-50 hidden w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl">
-        <div>
+        {% if navigation_tree is defined %}
+        <div class="tree-display-option mb-4 items-center justify-between gap-4 border-b border-gray-200 pb-4">
+          <span class="text-sm font-medium text-gray-900">Show Tree</span>
+          <button id="show-tree-toggle" type="button" role="switch" aria-checked="true" aria-label="Show Tree" aria-controls="folder-tree-panel"
+            class="display-switch relative h-7 w-12 shrink-0 rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+            <span class="display-switch-thumb absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform"></span>
+          </button>
+        </div>
+        {% endif %}
+        <div class="display-page-width">
           <p class="mb-2 text-sm font-medium text-gray-900">Page width</p>
           <div class="grid grid-cols-2 gap-2" role="group" aria-label="Page width">
             <button type="button"
               class="display-option rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-              data-layout-width="fixed" aria-pressed="true">Fixed</button>
+              data-layout-width="fixed" aria-pressed="false">Fixed</button>
             <button type="button"
               class="display-option rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-              data-layout-width="full" aria-pressed="false">Full width</button>
+              data-layout-width="full" aria-pressed="true">Full width</button>
           </div>
         </div>
 
@@ -108,9 +122,12 @@
   {% endif %}
 </div>
 
+{% if navigation_tree is defined %}</div></div>{% endif %}
+
 {% include 'partials/info-panel.html' %}
 {% endblock %}
 {% block scripts %}
+{% if navigation_tree is defined %}<script defer src="{{ url_path(request, 'reader_static', path='/js/folder-tree.js') }}"></script>{% endif %}
 <script src="{{ url_path(request, 'reader_static', path='/js/folder-preview.js') }}"></script>
 {% include 'partials/tag-editor.html' %}
 <script src="{{ url_path(request, 'reader_static', path='/js/browser.js') }}"></script>

@@ -1,0 +1,35 @@
+{% macro tree_nodes(nodes) %}
+<ul class="folder-tree-list">
+  {% for node in nodes %}
+  <li>
+    <div class="folder-tree-row">
+      {% if node.children %}
+      <button type="button" class="folder-tree-expand" data-folder-toggle="{{ node.id }}"
+        aria-expanded="{{ 'true' if node.id in navigation_tree.ancestors else 'false' }}"
+        aria-controls="folder-children-{{ node.id }}" aria-label="Expand or collapse {{ node.name }}">
+        <svg class="folder-tree-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path class="folder-tree-chevron-closed" d="M6 4l4 4-4 4" />
+          <path class="folder-tree-chevron-open" d="M6 6l4 4 4-4" />
+        </svg>
+      </button>
+      {% else %}<span class="folder-tree-spacer" aria-hidden="true"></span>{% endif %}
+      <a href="{{ url_path(request, 'browse_folder', folder_id=node.id) }}" data-tree-folder="{{ node.id }}"
+        {% if node.id == navigation_tree.selected_id %}aria-current="page"{% endif %} title="{{ node.name }}">{{ node.name }}</a>
+    </div>
+    {% if node.children %}
+    <div id="folder-children-{{ node.id }}" {% if node.id not in navigation_tree.ancestors %}hidden{% endif %}>
+      {{ tree_nodes(node.children) }}
+    </div>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+<aside id="folder-tree-panel" class="folder-tree-panel" aria-label="Folder navigation" tabindex="-1"
+  data-ancestors='{{ navigation_tree.ancestors | tojson }}'>
+  <nav id="folder-tree-scroll" aria-label="Library folders">
+    <a class="folder-tree-home" href="{{ url_path(request, 'browse_root') }}" {% if navigation_tree.home_active %}aria-current="page"{% endif %}>Home</a>
+    {{ tree_nodes(navigation_tree.nodes) }}
+    {% if not navigation_tree.nodes %}<p class="folder-tree-empty">No subfolders</p>{% endif %}
+  </nav>
+</aside>

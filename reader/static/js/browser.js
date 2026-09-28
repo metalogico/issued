@@ -4,42 +4,36 @@
 (() => {
   // --- View toggle (grid / table) ---
 
-  const comicsSection = document.getElementById('comics-section');
-  const gridBtn = document.getElementById('view-grid-btn');
-  const tableBtn = document.getElementById('view-table-btn');
+  const viewStorageKey = 'comics-view';
+  const desktopView = window.matchMedia('(min-width: 1024px)');
+  let preferredView = 'grid';
+  try {
+    preferredView = localStorage.getItem(viewStorageKey) === 'table' ? 'table' : 'grid';
+  } catch (_) {}
 
-  if (comicsSection && gridBtn && tableBtn) {
-    const isSearch = comicsSection.dataset.isSearch === 'true';
-    const STORAGE_KEY = 'comics-view';
-
-    const applyView = (view) => {
-      const gridLists = comicsSection.querySelectorAll('.comics-grid-list');
-      const tableLists = comicsSection.querySelectorAll('.comics-table-list');
-      if (view === 'table') {
-        gridLists.forEach(el => el.classList.add('hidden'));
-        tableLists.forEach(el => el.classList.remove('hidden'));
-        tableBtn.classList.add('bg-violet-100', 'text-violet-700');
-        gridBtn.classList.remove('bg-violet-100', 'text-violet-700');
-      } else {
-        tableLists.forEach(el => el.classList.add('hidden'));
-        gridLists.forEach(el => el.classList.remove('hidden'));
-        gridBtn.classList.add('bg-violet-100', 'text-violet-700');
-        tableBtn.classList.remove('bg-violet-100', 'text-violet-700');
-      }
-    };
-
-    const savedView = localStorage.getItem(STORAGE_KEY);
-    applyView(savedView || 'grid');
-
-    gridBtn.addEventListener('click', () => {
-      localStorage.setItem(STORAGE_KEY, 'grid');
-      applyView('grid');
-    });
-    tableBtn.addEventListener('click', () => {
-      localStorage.setItem(STORAGE_KEY, 'table');
-      applyView('table');
-    });
-  }
+  const applyView = () => {
+    const section = document.getElementById('comics-section');
+    if (!section) return;
+    const table = desktopView.matches && preferredView === 'table';
+    section.querySelectorAll('.comics-grid-list').forEach(el => el.classList.toggle('hidden', table));
+    section.querySelectorAll('.comics-table-list').forEach(el => el.classList.toggle('hidden', !table));
+    for (const [id, active] of [['view-grid-btn', !table], ['view-table-btn', table]]) {
+      const button = document.getElementById(id);
+      button?.classList.toggle('bg-violet-100', active);
+      button?.classList.toggle('text-violet-700', active);
+      button?.setAttribute('aria-pressed', String(active));
+    }
+  };
+  document.addEventListener('click', event => {
+    const button = event.target.closest('#view-grid-btn, #view-table-btn');
+    if (!button || !desktopView.matches) return;
+    preferredView = button.id === 'view-table-btn' ? 'table' : 'grid';
+    try { localStorage.setItem(viewStorageKey, preferredView); } catch (_) {}
+    applyView();
+  });
+  desktopView.addEventListener('change', applyView);
+  document.addEventListener('htmx:afterSwap', applyView);
+  applyView();
 
   // --- Ongoing series (folder bookmark) ---
 

@@ -144,3 +144,33 @@ def get_folder_preview_thumbnails(conn, folder_id: int, limit: int = 3) -> list[
                 result.append(row["uuid"])
 
     return result
+
+
+def get_navigation_tree(conn, selected_id: int | None = None) -> dict:
+    """Build the browse tree in one query, matching Home's single-root shortcut."""
+    rows = conn.execute("SELECT id, name, parent_id FROM folders ORDER BY name, id").fetchall()
+    nodes = {row["id"]: dict(row, children=[]) for row in rows}
+    roots = []
+    for node in nodes.values():
+        parent = nodes.get(node["parent_id"])
+        if parent is not None:
+            parent["children"].append(node)
+        else:
+            roots.append(node)
+    home_id = roots[0]["id"] if len(roots) == 1 else None
+    ancestors = []
+    current = nodes.get(selected_id)
+    seen = set()
+    while current and current["parent_id"] in nodes:
+        parent_id = current["parent_id"]
+        if parent_id in seen:
+            break
+        seen.add(parent_id)
+        ancestors.append(parent_id)
+        current = nodes[parent_id]
+    return {
+        "nodes": roots[0]["children"] if len(roots) == 1 else roots,
+        "ancestors": ancestors,
+        "home_active": selected_id is None or selected_id == home_id,
+        "selected_id": selected_id,
+    }

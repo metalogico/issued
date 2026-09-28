@@ -5,6 +5,7 @@ Re-exports every public function so existing callers continue to work unchanged.
 
 from .folders import (
     get_top_folders,
+    get_navigation_tree,
     add_folder_item_counts,
     get_folder,
     get_subfolders_with_item_count,
@@ -52,7 +53,7 @@ from .ongoing import (
 )
 
 __all__ = [
-    "get_top_folders", "add_folder_item_counts", "get_folder",
+    "get_navigation_tree", "get_top_folders", "add_folder_item_counts", "get_folder",
     "get_subfolders_with_item_count", "get_breadcrumbs_for_folder",
     "get_folder_preview_thumbnails",
     "get_comics_in_folder", "get_last_added_comics", "get_continue_reading_comics",

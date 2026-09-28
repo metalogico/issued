@@ -28,7 +28,7 @@
   };
 
   const applyWidth = (width, shouldPersist = false) => {
-    const normalizedWidth = validWidths.includes(width) ? width : 'fixed';
+    const normalizedWidth = validWidths.includes(width) ? width : 'full';
     root.dataset.layoutWidth = normalizedWidth;
     document.querySelectorAll('[data-layout-width]').forEach((button) => {
       button.setAttribute('aria-pressed', String(button.dataset.layoutWidth === normalizedWidth));
@@ -93,7 +93,7 @@
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape' && !panel.classList.contains('hidden')) {
       closePanel();
       toggle.focus();
     }

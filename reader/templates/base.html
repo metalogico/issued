@@ -19,18 +19,20 @@
         const savedBorderless = localStorage.getItem('issued-borderless-collage');
 
         root.dataset.theme = savedTheme || (prefersDark ? 'dark' : 'light');
-        root.dataset.layoutWidth = ['fixed', 'full'].includes(savedLayoutWidth) ? savedLayoutWidth : 'fixed';
+        root.dataset.layoutWidth = ['fixed', 'full'].includes(savedLayoutWidth) ? savedLayoutWidth : 'full';
         root.dataset.thumbnailSize = [
           'tiny', 'extra-small', 'small', 'medium', 'large', 'extra-large', 'huge'
         ].includes(savedThumbnailSize)
           ? savedThumbnailSize
           : 'medium';
+        root.dataset.showTree = localStorage.getItem('issued-show-tree') === 'false' ? 'false' : 'true';
         root.dataset.borderless = savedBorderless === 'true' ? 'true' : 'false';
       } catch (_) {
         root.dataset.theme = 'light';
-        root.dataset.layoutWidth = 'fixed';
+        root.dataset.layoutWidth = 'full';
         root.dataset.thumbnailSize = 'medium';
         root.dataset.borderless = 'false';
+        root.dataset.showTree = 'true';
       }
     })();
   </script>
@@ -48,7 +50,7 @@
   <header class="site-header border-b border-violet-100 bg-white/80 py-3 sm:py-4 backdrop-blur-md shadow-sm">
     <div class="layout-container mx-auto max-w-6xl px-3 sm:px-4">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
-        <div class="flex shrink-0 justify-center lg:justify-start lg:w-[min(14rem,28%)]">
+        <div class="flex shrink-0 justify-center lg:justify-start">
           <a href="{{ url_path(request, 'browse_root') }}"
             class="font-mono text-base font-bold tracking-tight no-underline sm:text-xl touch-manipulation hover:opacity-80 transition-all inline-block"
             title="Library">
@@ -61,15 +63,15 @@
           </a>
         </div>
         <div class="min-w-0 flex-1 flex justify-center px-0 lg:px-2">
-          <form action="{{ url_path(request, 'browse_search') }}" method="get" role="search" class="w-full max-w-md">
+          <form action="{{ url_path(request, 'browse_search') }}" method="get" role="search" class="min-w-0 w-full max-w-md">
             <input type="search" name="q" value="{{ request.query_params.get('q', '') }}"
               placeholder="Search your comics…"
-              class="w-full rounded-xl border-2 border-violet-200 bg-white px-4 py-3 text-base placeholder-gray-400 shadow-sm transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none touch-manipulation min-h-[44px] sm:py-2 sm:text-sm sm:min-h-0"
+              class="min-w-0 w-full rounded-xl border-2 border-violet-200 bg-white px-4 py-3 text-base placeholder-gray-400 shadow-sm transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none touch-manipulation min-h-[44px] sm:py-2 sm:text-sm sm:min-h-0"
               aria-label="Search" inputmode="search" autocomplete="off">
           </form>
         </div>
         <nav
-          class="flex shrink-0 flex-nowrap items-center justify-center gap-1 sm:gap-2 lg:justify-end lg:w-[min(20rem,32%)]"
+          class="flex min-w-0 shrink-0 flex-wrap items-center justify-center gap-1 sm:gap-2 lg:flex-nowrap lg:justify-end lg:w-auto"
           aria-label="Main">
           <a href="{{ url_path(request, 'browse_root') }}"
             class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-violet-50 hover:text-violet-800 touch-manipulation">Home</a>
@@ -98,7 +100,7 @@
         </nav>
       </div>
       {% if breadcrumbs %}
-      <nav class="mt-3 flex items-center gap-2 text-sm">
+      <nav class="library-breadcrumbs mt-3 flex flex-wrap items-center gap-2 text-sm" aria-label="Breadcrumb">
         <a href="{{ url_path(request, 'browse_root') }}"
           class="flex items-center gap-1 text-violet-600 hover:text-violet-700" aria-label="Home">
           <i data-lucide="house" class="h-[18px] w-[18px]"></i>

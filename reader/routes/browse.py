@@ -84,6 +84,7 @@ def browse_root(request: Request):
                     "title": _library_title(),
                     "breadcrumbs": [],
                     "folders": subfolders,
+                    "navigation_tree": repo.get_navigation_tree(conn, folder_id),
                     "comics": comics,
                     "grouped_comics": [],
                     "is_search": False,
@@ -106,6 +107,7 @@ def browse_root(request: Request):
                 "title": _library_title(),
                 "breadcrumbs": [],
                 "folders": top_folders,
+                "navigation_tree": repo.get_navigation_tree(conn),
                 "comics": [],
                 "grouped_comics": [],
                 "is_search": False,
@@ -211,6 +213,7 @@ def browse_folder(request: Request, folder_id: int):
         if not folder:
             raise HTTPException(status_code=404, detail="Folder not found")
 
+        navigation_tree = repo.get_navigation_tree(conn, folder_id)
         subfolders = repo.get_subfolders_with_item_count(conn, folder_id)
         comics = repo.get_comics_in_folder(conn, folder_id)
         breadcrumbs = repo.get_breadcrumbs_for_folder(conn, folder_id)
@@ -228,6 +231,7 @@ def browse_folder(request: Request, folder_id: int):
             "title": f"{folder['name']} — {_library_title()}",
             "breadcrumbs": breadcrumbs,
             "folders": subfolders,
+            "navigation_tree": navigation_tree,
             "comics": comics,
             "grouped_comics": [],
             "is_search": False,

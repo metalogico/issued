@@ -1,0 +1,9 @@
+  <div class="comics-toolbar mb-2 flex items-center justify-between gap-2">
+    <h2 class="text-lg font-bold text-gray-800">
+      {% if is_search %}Results{% else %}Comics{% endif %}
+      {% if comics %}
+      <span class="ml-2 text-sm font-normal text-gray-500">({{ comics|length }})</span>
+      {% endif %}
+    </h2>
+
+  </div>

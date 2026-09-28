@@ -86,6 +86,16 @@ def test_continue_series_prefers_most_recent_in_progress_comic():
     assert state["target"]["uuid"] == "comic-3"
 
 
+def test_continue_series_is_unavailable_before_reading_starts():
+    conn = _series_connection()
+    _add_comic(conn, 1, "Series 001.cbz")
+    _add_comic(conn, 2, "Series 002.cbz")
+
+    assert series.get_continue_series(conn, 7) == {
+        "status": "not_started", "target": None, "resume": False,
+    }
+
+
 def test_continue_series_uses_first_unread_and_reports_all_read():
     conn = _series_connection()
     _add_comic(conn, 1, "Series 001.cbz", completed=True)
@@ -245,6 +255,28 @@ def test_folder_and_navigation_api_expose_series_actions(continue_series_app):
     assert navigation["next"]["reader_url"].endswith(
         f"/reader/comic/issue-3?series={folder_id}&start=1"
     )
+
+
+@pytest.mark.parametrize("reading_state", ["unread", "in_progress", "partly_read", "all_read"])
+def test_continue_button_requires_started_incomplete_series(continue_series_app, reading_state):
+    from server.database import db_connection
+
+    folder_id, client = continue_series_app
+    with db_connection() as conn:
+        conn.execute("UPDATE metadata SET current_page = NULL, last_read_at = NULL, is_completed = 0")
+        if reading_state == "in_progress":
+            conn.execute("UPDATE metadata SET current_page = 3, last_read_at = '2026-01-02' WHERE issue_number = 1")
+        elif reading_state == "partly_read":
+            conn.execute("UPDATE metadata SET is_completed = 1 WHERE issue_number = 1")
+        elif reading_state == "all_read":
+            conn.execute("UPDATE metadata SET is_completed = 1")
+        conn.commit()
+
+    for path in ["/reader/", f"/reader/folder/{folder_id}"]:
+        response = client.get(path)
+        assert response.status_code == 200
+        assert ("Continue series" in response.text) == (reading_state in {"in_progress", "partly_read"})
+        assert ("All read" in response.text) == (reading_state == "all_read")
 
 
 def test_reader_renders_issue_navigation_and_preserves_completed_state(continue_series_app):

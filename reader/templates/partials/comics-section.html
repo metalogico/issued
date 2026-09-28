@@ -94,34 +94,6 @@
 {% endmacro %}
 
 <section class="mb-8" id="comics-section" data-is-search="{{ 'true' if is_search else 'false' }}">
-  <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <h2 class="text-lg font-bold text-gray-800">
-      {% if is_search %}Results{% else %}Comics{% endif %}
-      {% if comics %}
-      <span class="ml-2 text-sm font-normal text-gray-500">({{ comics|length }})</span>
-      {% endif %}
-    </h2>
-    <div class="flex items-center gap-2">
-      {% if comics and not is_search and folder_id %}
-      <button type="button" hx-post="/reader/api/folder/{{ folder_id }}/complete-all" hx-target="#comics-section"
-        hx-swap="outerHTML"
-        class="complete-all-btn flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 transition hover:bg-violet-100 active:scale-95">
-        <i data-lucide="check-circle" class="h-4 w-4"></i>
-        Complete all
-      </button>
-      {% endif %}
-      <div class="comics-view-selector flex items-center gap-1 rounded-xl border border-violet-100 bg-white p-1 shadow-sm">
-        <button type="button" id="view-grid-btn" title="Grid view"
-          class="view-toggle-btn flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition">
-          <i data-lucide="layout-grid" class="h-4 w-4"></i>
-        </button>
-        <button type="button" id="view-table-btn" title="Table view"
-          class="view-toggle-btn flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition">
-          <i data-lucide="list" class="h-4 w-4"></i>
-        </button>
-      </div>
-    </div>
-  </div>
 
   {% if is_search and grouped_comics %}
   {% for group in grouped_comics %}

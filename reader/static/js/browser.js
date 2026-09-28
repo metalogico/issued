@@ -2,6 +2,21 @@
  * Issued web reader – browser: comic info modal, htmx events, toasts, view toggle
  */
 (() => {
+  const seriesMenu = document.querySelector('.series-more');
+  document.addEventListener('click', (event) => {
+    if (seriesMenu && !seriesMenu.contains(event.target)) seriesMenu.open = false;
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && seriesMenu?.open) {
+      seriesMenu.open = false;
+      seriesMenu.querySelector('summary').focus();
+    }
+  });
+  document.addEventListener('htmx:beforeRequest', (event) => {
+    if (event.detail.elt?.classList.contains('complete-all-btn') && seriesMenu) {
+      seriesMenu.open = false;
+    }
+  });
   // --- View toggle (grid / table) ---
 
   const viewStorageKey = 'comics-view';
@@ -19,8 +34,6 @@
     section.querySelectorAll('.comics-table-list').forEach(el => el.classList.toggle('hidden', !table));
     for (const [id, active] of [['view-grid-btn', !table], ['view-table-btn', table]]) {
       const button = document.getElementById(id);
-      button?.classList.toggle('bg-violet-100', active);
-      button?.classList.toggle('text-violet-700', active);
       button?.setAttribute('aria-pressed', String(active));
     }
   };
@@ -42,14 +55,9 @@
 
   const applyOngoingBtn = (btn, ongoing) => {
     btn.dataset.ongoing = ongoing ? 'true' : 'false';
-    btn.title = ongoing ? 'Remove from Ongoing list' : 'Show on Ongoing page';
-    btn.className =
-      'folder-ongoing-toggle inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold shadow-sm transition active:scale-[0.98] touch-manipulation '
-      + (ongoing
-        ? 'border-violet-600 bg-violet-600 text-white'
-        : 'border-violet-200 bg-white text-violet-700 hover:bg-violet-50');
-    btn.innerHTML = '<i data-lucide="bookmark" class="h-4 w-4"></i>\n      Ongoing';
-    if (window.lucide) window.lucide.createIcons();
+    btn.setAttribute('aria-pressed', String(ongoing));
+    btn.classList.toggle('bg-violet-100', ongoing);
+    btn.querySelector('.ongoing-check')?.classList.toggle('hidden', !ongoing);
   };
 
   document.addEventListener('click', async (evt) => {

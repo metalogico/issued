@@ -71,6 +71,14 @@ def get_continue_series(conn, folder_id: int) -> dict[str, Any]:
     if not incomplete:
         return {"status": "all_read", "target": None, "resume": False}
 
+    has_reading_history = any(
+        comic.get("is_completed")
+        or (comic.get("current_page") is not None and comic.get("last_read_at") is not None)
+        for comic in comics
+    )
+    if not has_reading_history:
+        return {"status": "not_started", "target": None, "resume": False}
+
     started = [
         comic
         for comic in incomplete

@@ -82,6 +82,7 @@ def browse_root(request: Request):
                 "browser.html",
                 {
                     "title": _library_title(),
+                    "library_name": _library_title(),
                     "breadcrumbs": [],
                     "folders": subfolders,
                     "navigation_tree": repo.get_navigation_tree(conn, folder_id),
@@ -105,6 +106,7 @@ def browse_root(request: Request):
             "browser.html",
             {
                 "title": _library_title(),
+                "library_name": _library_title(),
                 "breadcrumbs": [],
                 "folders": top_folders,
                 "navigation_tree": repo.get_navigation_tree(conn),
@@ -228,7 +230,8 @@ def browse_folder(request: Request, folder_id: int):
         request,
         "browser.html",
         {
-            "title": f"{folder['name']} — {_library_title()}",
+            "title": folder["name"],
+            "library_name": _library_title(),
             "breadcrumbs": breadcrumbs,
             "folders": subfolders,
             "navigation_tree": navigation_tree,

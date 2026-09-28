@@ -655,6 +655,35 @@
   color: #9ca3af;
 }
 
+.series-more summary::-webkit-details-marker { display: none; }
+.series-actions > a, .series-actions > button, #display-settings-toggle { min-height: 44px; }
+.series-more summary:focus-visible { outline: 2px solid #8b5cf6; outline-offset: 2px; }
+.series-heading h1 { overflow-wrap: anywhere; }
+.issued-tooltip {
+  position: fixed;
+  z-index: 10000;
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 16px));
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd6fe;
+  border-radius: 0.625rem;
+  background: #fff;
+  color: #6d28d9;
+  box-shadow: 0 4px 16px rgb(76 29 149 / 15%);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.issued-tooltip[hidden] { display: none; }
+html[data-theme="dark"] .issued-tooltip {
+  background: #211a35;
+  border-color: #594278;
+  color: #ede9fe;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 30%);
+}
+#display-settings-panel { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+
 /* CSS tooltip via data-tooltip attribute */
 .comic-meta-chip[data-tooltip]::before {
   content: attr(data-tooltip);

@@ -1,0 +1,70 @@
+<div class="display-settings-wrapper relative shrink-0">
+      <button id="display-settings-toggle" type="button" aria-label="Display settings" data-ui-tooltip="Display settings"
+        class="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        aria-expanded="false" aria-controls="display-settings-panel">
+        <i data-lucide="monitor" class="h-4 w-4" aria-hidden="true"></i>
+      </button>
+
+      <div id="display-settings-panel"
+        class="absolute right-0 top-12 z-50 hidden w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white p-4 shadow-xl">
+        {% if comics or grouped_comics %}
+        <div class="comics-view-selector mb-4 border-b border-gray-200 pb-4">
+          <p class="mb-2 text-sm font-medium text-gray-900">View</p>
+          <div class="grid grid-cols-2 gap-2" role="group" aria-label="Comic view">
+            <button id="view-grid-btn" type="button" aria-pressed="true" class="view-toggle-btn display-option flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+              <i data-lucide="layout-grid" class="h-4 w-4" aria-hidden="true"></i>Grid
+            </button>
+            <button id="view-table-btn" type="button" aria-pressed="false" class="view-toggle-btn display-option flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+              <i data-lucide="list" class="h-4 w-4" aria-hidden="true"></i>Table
+            </button>
+          </div>
+        </div>
+        {% endif %}
+        {% if navigation_tree is defined %}
+        <div class="tree-display-option mb-4 items-center justify-between gap-4 border-b border-gray-200 pb-4">
+          <span class="text-sm font-medium text-gray-900">Show Tree</span>
+          <button id="show-tree-toggle" type="button" role="switch" aria-checked="true" aria-label="Show Tree" aria-controls="folder-tree-panel"
+            class="display-switch cursor-pointer relative h-7 w-12 shrink-0 rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+            <span class="display-switch-thumb absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform"></span>
+          </button>
+        </div>
+        {% endif %}
+        <div class="display-page-width">
+          <p class="mb-2 text-sm font-medium text-gray-900">Page width</p>
+          <div class="grid grid-cols-2 gap-2" role="group" aria-label="Page width">
+            <button type="button"
+              class="display-option flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              data-layout-width="fixed" aria-pressed="false"><i data-lucide="minimize-2" class="h-4 w-4 shrink-0" aria-hidden="true"></i>Fixed</button>
+            <button type="button"
+              class="display-option flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              data-layout-width="full" aria-pressed="true"><i data-lucide="maximize-2" class="h-4 w-4 shrink-0" aria-hidden="true"></i><span class="whitespace-nowrap">Full width</span></button>
+          </div>
+        </div>
+
+        <div class="mt-4 border-t border-gray-200 pt-4">
+          <p class="mb-2 text-sm font-medium text-gray-900">Cover size</p>
+          <div class="flex items-center justify-between gap-3">
+            <button id="thumbnail-size-decrease" type="button"
+              class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-200 text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Use smaller covers"><i data-lucide="minus" class="h-4 w-4"></i></button>
+            <span id="thumbnail-size-label"
+              class="min-w-20 text-center text-sm font-medium text-gray-700">Medium</span>
+            <button id="thumbnail-size-increase" type="button"
+              class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-200 text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Use larger covers"><i data-lucide="plus" class="h-4 w-4"></i></button>
+          </div>
+        </div>
+
+        <div class="mt-4 flex items-center justify-between gap-4 border-t border-gray-200 pt-4">
+          <div>
+            <p class="text-sm font-medium text-gray-900">Borderless collage</p>
+            <p class="mt-0.5 text-xs leading-snug text-gray-500">Show a seamless wall of covers</p>
+          </div>
+          <button id="borderless-collage-toggle" type="button" role="switch" aria-checked="false"
+            class="display-switch cursor-pointer relative h-7 w-12 shrink-0 rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+            aria-label="Toggle borderless collage">
+            <span class="display-switch-thumb absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform"></span>
+          </button>
+        </div>
+      </div>
+    </div>

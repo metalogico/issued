@@ -9,107 +9,57 @@
   <div class="tree-content">
 {% endif %}
 <div class="browser fade-in">
-  <div class="mb-4 flex items-center justify-between gap-3 sm:mb-6">
-    <h1
-      class="min-w-0 break-words bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-2xl font-bold text-transparent sm:text-3xl">
-      {{ title }}</h1>
-
-    <div class="relative shrink-0">
-      <button id="display-settings-toggle" type="button"
-        class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-        aria-expanded="false" aria-controls="display-settings-panel">
-        <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
-        <span class="hidden sm:inline">Display</span>
-      </button>
-
-      <div id="display-settings-panel"
-        class="absolute right-0 top-12 z-50 hidden w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl">
-        {% if navigation_tree is defined %}
-        <div class="tree-display-option mb-4 items-center justify-between gap-4 border-b border-gray-200 pb-4">
-          <span class="text-sm font-medium text-gray-900">Show Tree</span>
-          <button id="show-tree-toggle" type="button" role="switch" aria-checked="true" aria-label="Show Tree" aria-controls="folder-tree-panel"
-            class="display-switch relative h-7 w-12 shrink-0 rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-            <span class="display-switch-thumb absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform"></span>
+  <div class="series-heading mb-2 flex items-start justify-between gap-3">
+    <h1 class="min-w-0 flex-1 break-words bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-2xl font-bold text-transparent sm:text-3xl">{{ title }}</h1>
+    <div class="series-actions flex shrink-0 items-center gap-2">
+      {% if folder_id is defined and folder_id and (is_leaf or comics) %}
+      {% if is_leaf and series_continue and series_continue.status == 'ready' %}
+      <a href="{{ series_continue.target_url }}" aria-label="Continue series" data-ui-tooltip="Continue series"
+        class="series-continue flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl bg-violet-600 text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] touch-manipulation">
+        <i data-lucide="play" class="h-5 w-5" aria-hidden="true"></i>
+      </a>
+      {% elif is_leaf and series_continue and series_continue.status == 'all_read' %}
+      <span class="flex h-11 w-11 items-center justify-center text-emerald-700" aria-label="All read" data-ui-tooltip="All read">
+        <i data-lucide="circle-check" class="h-5 w-5" aria-hidden="true"></i>
+      </span>
+      {% endif %}
+      <details class="series-more relative">
+        <summary aria-label="Series actions" data-ui-tooltip="Series actions"
+          class="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border border-violet-200 bg-white text-violet-700 shadow-sm hover:bg-violet-50">
+          <i data-lucide="ellipsis" class="h-5 w-5" aria-hidden="true"></i>
+        </summary>
+        <div class="series-more-panel absolute right-0 top-12 z-40 w-52 rounded-xl border border-violet-200 bg-white p-2 shadow-lg">
+          {% if is_leaf %}
+          <button type="button" aria-pressed="{{ 'true' if is_ongoing else 'false' }}"
+            class="folder-ongoing-toggle flex min-h-[44px] w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50 {% if is_ongoing %}bg-violet-100{% endif %}"
+            data-folder-id="{{ folder_id }}" data-ongoing="{{ 'true' if is_ongoing else 'false' }}">
+            <i data-lucide="bookmark" class="h-4 w-4" aria-hidden="true"></i>
+            Ongoing
+            <i data-lucide="check" class="ongoing-check ml-auto h-4 w-4 {% if not is_ongoing %}hidden{% endif %}" aria-hidden="true"></i>
           </button>
-        </div>
-        {% endif %}
-        <div class="display-page-width">
-          <p class="mb-2 text-sm font-medium text-gray-900">Page width</p>
-          <div class="grid grid-cols-2 gap-2" role="group" aria-label="Page width">
-            <button type="button"
-              class="display-option rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-              data-layout-width="fixed" aria-pressed="false">Fixed</button>
-            <button type="button"
-              class="display-option rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-              data-layout-width="full" aria-pressed="true">Full width</button>
-          </div>
-        </div>
-
-        <div class="mt-4 border-t border-gray-200 pt-4">
-          <p class="mb-2 text-sm font-medium text-gray-900">Cover size</p>
-          <div class="flex items-center justify-between gap-3">
-            <button id="thumbnail-size-decrease" type="button"
-              class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Use smaller covers"><i data-lucide="minus" class="h-4 w-4"></i></button>
-            <span id="thumbnail-size-label"
-              class="min-w-20 text-center text-sm font-medium text-gray-700">Medium</span>
-            <button id="thumbnail-size-increase" type="button"
-              class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Use larger covers"><i data-lucide="plus" class="h-4 w-4"></i></button>
-          </div>
-        </div>
-
-        <div class="mt-4 flex items-center justify-between gap-4 border-t border-gray-200 pt-4">
-          <div>
-            <p class="text-sm font-medium text-gray-900">Borderless collage</p>
-            <p class="mt-0.5 text-xs leading-snug text-gray-500">Show a seamless wall of cover art.</p>
-          </div>
-          <button id="borderless-collage-toggle" type="button" role="switch" aria-checked="false"
-            class="display-switch relative h-7 w-12 shrink-0 rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-            aria-label="Toggle borderless collage">
-            <span class="display-switch-thumb absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform"></span>
+          {% endif %}
+          {% if comics %}
+          <button type="button" hx-post="/reader/api/folder/{{ folder_id }}/complete-all" hx-target="#comics-section" hx-swap="outerHTML"
+            class="complete-all-btn flex min-h-[44px] w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50">
+            <i data-lucide="check-circle" class="h-4 w-4" aria-hidden="true"></i>Complete all
           </button>
+          {% endif %}
         </div>
-      </div>
+      </details>
+      {% endif %}
+      {% include 'partials/display-settings.html' %}
     </div>
   </div>
-
-  {% if folder_id is defined and folder_id and is_leaf %}
-  <div class="mb-4 flex flex-wrap items-center gap-2">
-    {% if series_continue and series_continue.status == 'ready' %}
-    <a href="{{ series_continue.target_url }}"
-      class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] touch-manipulation"
-      title="{% if series_continue.resume %}Resume {{ series_continue.target.filename }}{% else %}Start {{ series_continue.target.filename }}{% endif %}">
-      <i data-lucide="play" class="h-4 w-4"></i>
-      Continue series
-    </a>
-    {% elif series_continue and series_continue.status == 'all_read' %}
-    <span
-      class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700"
-      aria-label="All comics in this series are completed">
-      <i data-lucide="circle-check" class="h-4 w-4"></i>
-      All read
-    </span>
-    {% endif %}
-    <button type="button"
-      class="folder-ongoing-toggle inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold shadow-sm transition active:scale-[0.98] touch-manipulation {% if is_ongoing %}border-violet-600 bg-violet-600 text-white{% else %}border-violet-200 bg-white text-violet-700 hover:bg-violet-50{% endif %}"
-      data-folder-id="{{ folder_id }}" data-ongoing="{{ 'true' if is_ongoing else 'false' }}"
-      title="{% if is_ongoing %}Remove from Ongoing list{% else %}Show on Ongoing page{% endif %}">
-      <i data-lucide="bookmark" class="h-4 w-4"></i>
-      Ongoing
-    </button>
-    <span class="text-xs text-gray-500">Track this series on the <a href="{{ url_path(request, 'browse_ongoings') }}"
-        class="font-medium text-violet-600 hover:text-violet-800">Ongoing</a> page.</span>
-  </div>
-  {% endif %}
 
   {% include 'partials/continue-reading.html' %}
 
   {% include 'partials/last-added.html' %}
 
+
   {% include 'partials/folder-grid.html' %}
 
   {% if comics or grouped_comics %}
+  {% include 'partials/comics-toolbar.html' %}
   {% include 'partials/comics-section.html' %}
   {% endif %}
 
@@ -130,5 +80,5 @@
 {% if navigation_tree is defined %}<script defer src="{{ url_path(request, 'reader_static', path='/js/folder-tree.js') }}"></script>{% endif %}
 <script src="{{ url_path(request, 'reader_static', path='/js/folder-preview.js') }}"></script>
 {% include 'partials/tag-editor.html' %}
-<script src="{{ url_path(request, 'reader_static', path='/js/browser.js') }}"></script>
+<script src="{{ url_path(request, 'reader_static', path='/js/browser.js') }}?v=20260928-display-buttons"></script>
 {% endblock %}

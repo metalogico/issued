@@ -28,7 +28,7 @@
 <aside id="folder-tree-panel" class="folder-tree-panel" aria-label="Folder navigation" tabindex="-1"
   data-ancestors='{{ navigation_tree.ancestors | tojson }}'>
   <nav id="folder-tree-scroll" aria-label="Library folders">
-    <a class="folder-tree-home" href="{{ url_path(request, 'browse_root') }}" {% if navigation_tree.home_active %}aria-current="page"{% endif %}>Home</a>
+    <a class="folder-tree-home" href="{{ url_path(request, 'browse_root') }}" {% if navigation_tree.home_active %}aria-current="page"{% endif %}>{{ library_name }}</a>
     {{ tree_nodes(navigation_tree.nodes) }}
     {% if not navigation_tree.nodes %}<p class="folder-tree-empty">No subfolders</p>{% endif %}
   </nav>

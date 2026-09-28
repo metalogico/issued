@@ -41,13 +41,13 @@
   <script src="{{ url_path(request, 'reader_static', path='/js/sweetalert2.all.min.js') }}"></script>
   <script src="{{ url_path(request, 'reader_static', path='/js/lucide.min.js') }}"></script>
   <link rel="icon" type="image/svg+xml" href="{{ url_path(request, 'reader_static', path='/img/favicon.svg') }}">
-  <link rel="stylesheet" href="{{ url_path(request, 'reader_static', path='/css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_path(request, 'reader_static', path='/css/style.css') }}?v=20260928-content-display">
   {% block head %}{% endblock %}
 </head>
 
 <body
   class="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 text-gray-900 antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] {% block body_class %}{% endblock %}">
-  <header class="site-header border-b border-violet-100 bg-white/80 py-3 sm:py-4 backdrop-blur-md shadow-sm">
+  <header class="site-header relative z-[60] border-b border-violet-100 bg-white/80 py-3 sm:py-4 backdrop-blur-md shadow-sm">
     <div class="layout-container mx-auto max-w-6xl px-3 sm:px-4">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
         <div class="flex shrink-0 justify-center lg:justify-start">
@@ -63,7 +63,7 @@
           </a>
         </div>
         <div class="min-w-0 flex-1 flex justify-center px-0 lg:px-2">
-          <form action="{{ url_path(request, 'browse_search') }}" method="get" role="search" class="min-w-0 w-full max-w-md">
+          <form action="{{ url_path(request, 'browse_search') }}" method="get" role="search" class="min-w-0 w-full max-w-sm">
             <input type="search" name="q" value="{{ request.query_params.get('q', '') }}"
               placeholder="Search your comics…"
               class="min-w-0 w-full rounded-xl border-2 border-violet-200 bg-white px-4 py-3 text-base placeholder-gray-400 shadow-sm transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none touch-manipulation min-h-[44px] sm:py-2 sm:text-sm sm:min-h-0"
@@ -71,7 +71,7 @@
           </form>
         </div>
         <nav
-          class="flex min-w-0 shrink-0 flex-wrap items-center justify-center gap-1 sm:gap-2 lg:flex-nowrap lg:justify-end lg:w-auto"
+          class="relative flex w-full min-w-0 shrink-0 flex-wrap items-center justify-center gap-1 sm:gap-2 lg:flex-nowrap lg:justify-end lg:w-auto"
           aria-label="Main">
           <a href="{{ url_path(request, 'browse_root') }}"
             class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-violet-50 hover:text-violet-800 touch-manipulation">Home</a>
@@ -87,16 +87,18 @@
               class="rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 touch-manipulation cursor-pointer">Logout</button>
           </form>
           {% endif %}
+          <div class="header-controls flex shrink-0 items-center gap-2">
           <button type="button" id="scan-library-btn" title="Scan library" aria-label="Scan library"
-            class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 touch-manipulation">
+            class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 touch-manipulation">
             <i data-lucide="refresh-cw" class="h-4 w-4"></i>
           </button>
           <button type="button" id="theme-toggle" title="Switch to dark mode" aria-label="Switch to dark mode"
             aria-pressed="false"
-            class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 touch-manipulation">
+            class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-violet-200 bg-white text-gray-600 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 touch-manipulation">
             <i data-lucide="moon" class="theme-moon h-4 w-4"></i>
             <i data-lucide="sun" class="theme-sun h-4 w-4"></i>
           </button>
+          </div>
         </nav>
       </div>
       {% if breadcrumbs %}
@@ -104,7 +106,6 @@
         <a href="{{ url_path(request, 'browse_root') }}"
           class="flex items-center gap-1 text-violet-600 hover:text-violet-700" aria-label="Home">
           <i data-lucide="house" class="h-[18px] w-[18px]"></i>
-          <span class="font-medium">Home</span>
         </a>
         {% for crumb in breadcrumbs %}
         <span class="text-gray-300">/</span>
@@ -125,6 +126,7 @@
   {% block scripts %}{% endblock %}
   <script src="{{ url_path(request, 'reader_static', path='/js/layout.js') }}"></script>
   <script src="{{ url_path(request, 'reader_static', path='/js/theme.js') }}"></script>
+  <script src="{{ url_path(request, 'reader_static', path='/js/tooltips.js') }}?v=20260928-content-display"></script>
   <script>lucide.createIcons();</script>
 </body>
 

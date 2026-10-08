@@ -322,7 +322,7 @@ def browse_tags(request: Request):
     )
 
 
-@router.get("/tags/{tag_name}")
+@router.get("/tags/{tag_name:path}")
 def browse_tag(request: Request, tag_name: str):
     """Browse all comics with a given tag."""
     with db_connection() as conn:

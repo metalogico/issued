@@ -153,7 +153,7 @@ def api_tags_list():
         return {"tags": repo.get_all_tags(conn)}
 
 
-@router.delete("/api/tags/{tag_name}")
+@router.delete("/api/tags/{tag_name:path}")
 def api_tag_delete(tag_name: str):
     """Delete a tag globally (removes it from all comics)."""
     with db_connection() as conn:

@@ -5,7 +5,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_layout_preferences_are_persisted_and_validated():
-    script = (PROJECT_ROOT / "reader" / "static" / "js" / "layout.js").read_text()
+    script = (PROJECT_ROOT / "reader" / "static" / "js" / "layout.js").read_text(encoding="utf-8")
 
     assert "issued-layout-width" in script
     assert "issued-thumbnail-size" in script
@@ -20,7 +20,7 @@ def test_layout_preferences_are_persisted_and_validated():
 
 
 def test_layout_styles_support_full_width_and_resizable_cover_grids():
-    styles = (PROJECT_ROOT / "reader" / "static" / "css" / "style.css").read_text()
+    styles = (PROJECT_ROOT / "reader" / "static" / "css" / "style.css").read_text(encoding="utf-8")
 
     assert 'html[data-layout-width="full"] .layout-container' in styles
     assert 'html[data-thumbnail-size="small"] .cover-grid' in styles
@@ -36,8 +36,8 @@ def test_layout_styles_support_full_width_and_resizable_cover_grids():
 
 
 def test_library_grids_opt_in_to_cover_sizing():
-    folder_grid = (PROJECT_ROOT / "reader" / "templates" / "partials" / "folder-grid.html").read_text()
-    comics_section = (PROJECT_ROOT / "reader" / "templates" / "partials" / "comics-section.html").read_text()
+    folder_grid = (PROJECT_ROOT / "reader" / "templates" / "partials" / "folder-grid.html").read_text(encoding="utf-8")
+    comics_section = (PROJECT_ROOT / "reader" / "templates" / "partials" / "comics-section.html").read_text(encoding="utf-8")
 
     assert "cover-grid" in folder_grid
     assert comics_section.count("cover-grid") == 2

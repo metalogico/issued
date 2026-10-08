@@ -5,8 +5,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_reader_loads_zoom_interactions_as_a_native_module():
-    template = (PROJECT_ROOT / "reader" / "templates" / "reader.html").read_text()
-    entrypoint = (PROJECT_ROOT / "reader" / "static" / "js" / "reader.js").read_text()
+    template = (PROJECT_ROOT / "reader" / "templates" / "reader.html").read_text(encoding="utf-8")
+    entrypoint = (PROJECT_ROOT / "reader" / "static" / "js" / "reader.js").read_text(encoding="utf-8")
 
     assert 'type="module"' in template
     assert "createReaderInteractions" in entrypoint
@@ -16,7 +16,7 @@ def test_reader_loads_zoom_interactions_as_a_native_module():
 
 
 def test_reader_interactions_define_reduced_edges_and_double_tap_zoom():
-    script = (PROJECT_ROOT / "reader" / "static" / "js" / "reader-interactions.js").read_text()
+    script = (PROJECT_ROOT / "reader" / "static" / "js" / "reader-interactions.js").read_text(encoding="utf-8")
 
     assert "NAV_EDGE_RATIO = 0.18" in script
     assert "NAV_EDGE_MIN_PX = 64" in script
@@ -46,8 +46,8 @@ def test_reader_interactions_define_reduced_edges_and_double_tap_zoom():
 
 def test_panzoom_is_vendored_with_version_and_license():
     vendor_dir = PROJECT_ROOT / "reader" / "static" / "js" / "vendor"
-    panzoom = (vendor_dir / "panzoom-4.6.2.es.min.js").read_text()
-    license_text = (vendor_dir / "PANZOOM-LICENSE.txt").read_text()
+    panzoom = (vendor_dir / "panzoom-4.6.2.es.min.js").read_text(encoding="utf-8")
+    license_text = (vendor_dir / "PANZOOM-LICENSE.txt").read_text(encoding="utf-8")
 
     assert "Panzoom 4.6.2" in panzoom
     assert "export default globalThis.Panzoom" in panzoom
@@ -56,8 +56,8 @@ def test_panzoom_is_vendored_with_version_and_license():
 
 
 def test_reader_styles_cover_zoom_pan_and_reduced_motion():
-    styles = (PROJECT_ROOT / "reader" / "static" / "css" / "style.css").read_text()
-    template = (PROJECT_ROOT / "reader" / "templates" / "reader.html").read_text()
+    styles = (PROJECT_ROOT / "reader" / "static" / "css" / "style.css").read_text(encoding="utf-8")
+    template = (PROJECT_ROOT / "reader" / "templates" / "reader.html").read_text(encoding="utf-8")
 
     assert ".reader-image-wrap.is-zoomed" in styles
     assert ".reader-image-wrap.is-panning" in styles
@@ -67,8 +67,8 @@ def test_reader_styles_cover_zoom_pan_and_reduced_motion():
 
 
 def test_reader_mobile_toolbar_reuses_actions_and_has_accessible_navigation():
-    base = (PROJECT_ROOT / "reader" / "templates" / "base.html").read_text()
-    template = (PROJECT_ROOT / "reader" / "templates" / "reader.html").read_text()
+    base = (PROJECT_ROOT / "reader" / "templates" / "base.html").read_text(encoding="utf-8")
+    template = (PROJECT_ROOT / "reader" / "templates" / "reader.html").read_text(encoding="utf-8")
 
     assert "{% block body_class %}" in base
     assert 'class="site-header ' in base
@@ -87,7 +87,7 @@ def test_reader_mobile_toolbar_reuses_actions_and_has_accessible_navigation():
 
 
 def test_reader_mobile_styles_are_scoped_and_edge_to_edge():
-    styles = (PROJECT_ROOT / "reader" / "static" / "css" / "style.css").read_text()
+    styles = (PROJECT_ROOT / "reader" / "static" / "css" / "style.css").read_text(encoding="utf-8")
 
     assert "@media (max-width: 639px)" in styles
     assert ".reader-page .site-header" in styles
@@ -104,7 +104,7 @@ def test_reader_mobile_styles_are_scoped_and_edge_to_edge():
 
 
 def test_reader_mobile_menu_manages_focus_escape_and_layout_changes():
-    entrypoint = (PROJECT_ROOT / "reader" / "static" / "js" / "reader.js").read_text()
+    entrypoint = (PROJECT_ROOT / "reader" / "static" / "js" / "reader.js").read_text(encoding="utf-8")
 
     assert "MOBILE_READER_MEDIA_QUERY" in entrypoint
     assert "window.matchMedia(MOBILE_READER_MEDIA_QUERY)" in entrypoint
@@ -118,8 +118,8 @@ def test_reader_mobile_menu_manages_focus_escape_and_layout_changes():
 
 
 def test_reader_toolbars_ignore_touch_compat_mouse_events_and_toggle_on_center_tap():
-    entrypoint = (PROJECT_ROOT / "reader" / "static" / "js" / "reader.js").read_text()
-    script = (PROJECT_ROOT / "reader" / "static" / "js" / "reader-interactions.js").read_text()
+    entrypoint = (PROJECT_ROOT / "reader" / "static" / "js" / "reader.js").read_text(encoding="utf-8")
+    script = (PROJECT_ROOT / "reader" / "static" / "js" / "reader-interactions.js").read_text(encoding="utf-8")
 
     assert "addEventListener('mousemove', showControls)" not in entrypoint
     assert "event.pointerType === 'mouse'" in entrypoint

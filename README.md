@@ -283,6 +283,8 @@ Just open: `http://localhost:8181/reader/`
 
 From the web reader you can browse folders, search your library, read comics, edit comic details, and keep track of what you are reading.
 
+The reader's scripts and styles are served with `Cache-Control: no-cache`: the browser keeps its copy but checks it with the server on each load, so an update takes effect without a forced refresh.
+
 - Use **Recent** to see the comics you added most recently.
 - Use **Continue Reading** to jump back into comics you have started but not finished.
 - Mark comics as done from the grid or table view.

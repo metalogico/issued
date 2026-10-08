@@ -129,6 +129,59 @@ def ensure_tags_tables() -> bool:
         conn.close()
 
 
+def ensure_comic_tags_cascade() -> bool:
+    """Rebuild ``comic_tags`` with ``ON DELETE CASCADE`` if it lacks it.
+
+    Returns True when the table was rebuilt.  Databases initialised through
+    ``SQLModel.metadata.create_all`` before the tags revision got a
+    ``comic_tags`` table without the cascade (0003 skips existing tables), so
+    deleting a tagged comic violated the foreign key.  SQLite cannot alter a
+    foreign key in place: the table is copied into a new one, keeping the
+    tags and dropping orphan rows.
+    """
+    if not DB_PATH.exists():
+        return False
+    conn = sqlite3.connect(DB_PATH, isolation_level=None)
+    try:
+        row = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='comic_tags'"
+        ).fetchone()
+        if row is None or row[0].upper().count("ON DELETE CASCADE") >= 2:
+            return False
+
+        conn.execute("BEGIN")
+        try:
+            conn.execute(
+                """
+                CREATE TABLE comic_tags_new (
+                    comic_id INTEGER NOT NULL REFERENCES comics(id) ON DELETE CASCADE,
+                    tag_id   INTEGER NOT NULL REFERENCES tags(id)   ON DELETE CASCADE,
+                    PRIMARY KEY (comic_id, tag_id)
+                )
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO comic_tags_new (comic_id, tag_id)
+                SELECT comic_id, tag_id FROM comic_tags
+                WHERE comic_id IN (SELECT id FROM comics)
+                  AND tag_id IN (SELECT id FROM tags)
+                """
+            )
+            conn.execute("DROP TABLE comic_tags")
+            conn.execute("ALTER TABLE comic_tags_new RENAME TO comic_tags")
+            conn.execute("COMMIT")
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
+        logger.warning(
+            "Rebuilt comic_tags with ON DELETE CASCADE (schema repair for a legacy DB)."
+        )
+        return True
+    finally:
+        conn.close()
+
+
 def _backup_db() -> None:
     """Copy library.db → library.db.bak (overwrite previous backup)."""
     if DB_PATH.exists():

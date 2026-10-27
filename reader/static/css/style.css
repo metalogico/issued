@@ -832,6 +832,10 @@ html[data-borderless="true"] .folder-preview-images {
   padding: 0 !important;
 }
 
+html[data-hide-file-types="true"] .comic-filename-extension {
+  display: none;
+}
+
 .display-switch[aria-checked="true"] {
   background-color: #7c3aed;
 }

@@ -1,3 +1,4 @@
+{% from 'macros/comic-filename.html' import comic_filename %}
 {% if continue_reading_comics %}
 <details class="group mb-8" open>
   <summary class="mb-4 flex cursor-pointer items-center gap-3 list-none">
@@ -42,7 +43,7 @@
               {% endif %}
             </div>
             <div class="bg-white p-2">
-              <span class="line-clamp-2 block text-center text-xs font-medium text-gray-800">{{ c.filename }}</span>
+              {{ comic_filename(c.filename, 'line-clamp-2 block text-center text-xs font-medium text-gray-800') }}
               {% if c.get('page_count') and c.page_count > 0 %}
               <span class="mt-1 block text-center text-[10px] text-gray-500">{{ c.page_count }} pages</span>
               {% endif %}

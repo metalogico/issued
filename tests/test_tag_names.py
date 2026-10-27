@@ -7,6 +7,7 @@ import re
 import sqlite3
 from contextlib import closing
 from datetime import datetime, timezone
+from html.parser import HTMLParser
 from urllib.parse import quote
 
 import pytest
@@ -27,6 +28,21 @@ from server.models import Comic, Folder
 from server.opds import app
 
 TAG_NAMES = ["Action/Adventure", "Sci#Fi", "What?", "100%", "Plain"]
+
+
+class _RenderedText(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+
+def rendered_text(html: str) -> str:
+    parser = _RenderedText()
+    parser.feed(html)
+    return "".join(parser.parts)
 
 
 @pytest.fixture
@@ -100,7 +116,7 @@ def test_tag_index_links_open_their_own_tag(tagged_app):
         assert href in hrefs
         page = client.get(href)
         assert page.status_code == 200
-        assert "Issue 1.cbz" in page.text
+        assert "Issue 1.cbz" in rendered_text(page.text)
 
 
 @pytest.mark.parametrize("name", TAG_NAMES)

@@ -10,6 +10,9 @@ def test_layout_preferences_are_persisted_and_validated():
     assert "issued-layout-width" in script
     assert "issued-thumbnail-size" in script
     assert "issued-borderless-collage" in script
+    assert "issued-hide-file-types" in script
+    base = (PROJECT_ROOT / "reader" / "templates" / "base.html").read_text(encoding="utf-8")
+    assert "issued-hide-file-types" in base
     assert "['fixed', 'full']" in script
     assert "['tiny', 'extra-small', 'small', 'medium', 'large', 'extra-large', 'huge']" in script
     assert "Extra small" in script
@@ -32,6 +35,7 @@ def test_layout_styles_support_full_width_and_resizable_cover_grids():
     assert 'html[data-borderless="true"] .cover-grid' in styles
     assert 'html[data-borderless="true"] .comic-card-details' in styles
     assert 'html[data-borderless="true"] .folder-card-details' in styles
+    assert 'html[data-hide-file-types="true"] .comic-filename-extension' in styles
     assert "--cover-min-width" in styles
 
 

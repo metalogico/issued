@@ -2,6 +2,7 @@
   const widthStorageKey = 'issued-layout-width';
   const sizeStorageKey = 'issued-thumbnail-size';
   const borderlessStorageKey = 'issued-borderless-collage';
+  const hideFileTypesStorageKey = 'issued-hide-file-types';
   const validWidths = ['fixed', 'full'];
   const validSizes = ['tiny', 'extra-small', 'small', 'medium', 'large', 'extra-large', 'huge'];
   const sizeLabels = {
@@ -20,6 +21,7 @@
   const decreaseButton = document.getElementById('thumbnail-size-decrease');
   const increaseButton = document.getElementById('thumbnail-size-increase');
   const borderlessToggle = document.getElementById('borderless-collage-toggle');
+  const hideFileTypesToggle = document.getElementById('hide-file-types-toggle');
 
   const persist = (key, value) => {
     try {
@@ -53,9 +55,17 @@
     if (shouldPersist) persist(borderlessStorageKey, String(isEnabled));
   };
 
+  const applyHideFileTypes = (enabled, shouldPersist = false) => {
+    const isEnabled = enabled === true || enabled === 'true';
+    root.dataset.hideFileTypes = String(isEnabled);
+    hideFileTypesToggle?.setAttribute('aria-checked', String(isEnabled));
+    if (shouldPersist) persist(hideFileTypesStorageKey, String(isEnabled));
+  };
+
   applyWidth(root.dataset.layoutWidth);
   applySize(root.dataset.thumbnailSize);
   applyBorderless(root.dataset.borderless);
+  applyHideFileTypes(root.dataset.hideFileTypes);
 
   if (!toggle || !panel) return;
 
@@ -86,6 +96,10 @@
 
   borderlessToggle?.addEventListener('click', () => {
     applyBorderless(root.dataset.borderless !== 'true', true);
+  });
+
+  hideFileTypesToggle?.addEventListener('click', () => {
+    applyHideFileTypes(root.dataset.hideFileTypes !== 'true', true);
   });
 
   document.addEventListener('click', (event) => {

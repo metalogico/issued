@@ -1,3 +1,4 @@
+{% from 'macros/comic-filename.html' import comic_filename, comic_filename_text %}
 {% macro comic_table(comics_list, request) %}
 <div class="comics-table-wrap overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-md">
   <table class="w-full min-w-[640px] border-collapse text-sm">
@@ -29,7 +30,7 @@
         </td>
         <td class="py-2 pr-4">
           <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}" class="block">
-            <p class="font-semibold text-gray-900 leading-snug line-clamp-2">{{ c.filename }}</p>
+            <p class="font-semibold text-gray-900 leading-snug line-clamp-2">{{ comic_filename_text(c.filename) }}</p>
           </a>
         </td>
         <td class="py-2 pr-4 text-gray-700">
@@ -165,7 +166,7 @@
           </div>
           <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}"
             class="comic-card-details block bg-white p-3">
-            <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.filename }}</span>
+            {{ comic_filename(c.filename) }}
             {% if c.get('page_count') and c.page_count > 0 %}
             <span class="mt-1 block text-center text-xs text-gray-500">{{ c.page_count }} pages</span>
             {% endif %}
@@ -213,7 +214,7 @@
         </div>
         <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}"
           class="comic-card-details block bg-white p-3">
-          <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.filename }}</span>
+          {{ comic_filename(c.filename) }}
           {% if c.get('page_count') and c.page_count > 0 %}
           <span class="mt-1 block text-center text-xs text-gray-500">{{ c.page_count }} pages</span>
           {% endif %}

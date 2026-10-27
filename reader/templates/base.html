@@ -17,6 +17,7 @@
         const savedLayoutWidth = localStorage.getItem('issued-layout-width');
         const savedThumbnailSize = localStorage.getItem('issued-thumbnail-size');
         const savedBorderless = localStorage.getItem('issued-borderless-collage');
+        const savedHideFileTypes = localStorage.getItem('issued-hide-file-types');
 
         root.dataset.theme = savedTheme || (prefersDark ? 'dark' : 'light');
         root.dataset.layoutWidth = ['fixed', 'full'].includes(savedLayoutWidth) ? savedLayoutWidth : 'fixed';
@@ -26,11 +27,13 @@
           ? savedThumbnailSize
           : 'medium';
         root.dataset.borderless = savedBorderless === 'true' ? 'true' : 'false';
+        root.dataset.hideFileTypes = savedHideFileTypes === 'true' ? 'true' : 'false';
       } catch (_) {
         root.dataset.theme = 'light';
         root.dataset.layoutWidth = 'fixed';
         root.dataset.thumbnailSize = 'medium';
         root.dataset.borderless = 'false';
+        root.dataset.hideFileTypes = 'false';
       }
     })();
   </script>

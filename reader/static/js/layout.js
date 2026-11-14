@@ -87,17 +87,27 @@
     children.sort(compare).forEach((child) => container.appendChild(child));
   };
 
+  // Views opt out of sorting with data-sortable="false" (Recent keeps server order).
+  const isSortableView = () => {
+    const section = document.getElementById('comics-section');
+    return !!section && section.dataset.isSearch !== 'true' && section.dataset.sortable !== 'false';
+  };
+
   const applySortToDom = (order) => {
     const compare = sortComparators[order];
+    if (!compare || !isSortableView()) return;
     const section = document.getElementById('comics-section');
-    if (!compare || !section || section.dataset.isSearch === 'true') return;
     section.querySelectorAll('.comics-grid-list').forEach((list) => sortChildren(list, 'li[data-title]', compare));
     section.querySelectorAll('.comics-table-list tbody').forEach((tbody) => sortChildren(tbody, 'tr[data-title]', compare));
   };
 
   const applySort = (order, shouldPersist = false) => {
+    // Leave non-sortable views alone: no DOM reorder, no state, no persisted preference.
+    if (!isSortableView()) return;
     const normalizedOrder = validSorts.includes(order) ? order : 'az';
-    root.dataset.sortOrder = normalizedOrder;
+    // State lives under its own attribute name: using data-sort-order here would make
+    // <html> match the [data-sort-order] queries below and re-sort on every click.
+    root.dataset.comicSort = normalizedOrder;
     document.querySelectorAll('[data-sort-order]').forEach((button) => {
       button.setAttribute('aria-pressed', String(button.dataset.sortOrder === normalizedOrder));
     });
@@ -116,7 +126,7 @@
   });
 
   // The comics section is replaced by htmx (e.g. "Complete all"): re-apply the order.
-  document.addEventListener('htmx:afterSwap', () => applySort(root.dataset.sortOrder));
+  document.addEventListener('htmx:afterSwap', () => applySort(root.dataset.comicSort));
 
   if (!toggle || !panel) return;
 

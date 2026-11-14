@@ -95,7 +95,8 @@
 </div>
 {% endmacro %}
 
-<section class="mb-8" id="comics-section" data-is-search="{{ 'true' if is_search else 'false' }}">
+<section class="mb-8" id="comics-section" data-is-search="{{ 'true' if is_search else 'false' }}"
+  data-sortable="{{ 'true' if sortable|default(true) and not is_search else 'false' }}">
   <div class="mb-4 flex items-center justify-between">
     <h2 class="text-lg font-bold text-gray-800">
       {% if is_search %}Results{% else %}Comics{% endif %}

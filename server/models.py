@@ -90,5 +90,5 @@ class Tag(SQLModel, table=True):
 class ComicTag(SQLModel, table=True):
     __tablename__ = "comic_tags"
 
-    comic_id: int = Field(foreign_key="comics.id", primary_key=True)
-    tag_id: int = Field(foreign_key="tags.id", primary_key=True)
+    comic_id: int = Field(foreign_key="comics.id", primary_key=True, ondelete="CASCADE")
+    tag_id: int = Field(foreign_key="tags.id", primary_key=True, ondelete="CASCADE")

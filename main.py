@@ -16,6 +16,7 @@ from server.database import get_engine, init_db, reset_database
 from server.migrations import (
     ensure_ongoing_series_table,
     ensure_tags_tables,
+    ensure_comic_tags_cascade,
     get_status,
     run_migrations,
     stamp_if_needed,
@@ -167,6 +168,9 @@ def serve(
     typer.echo(typer.style(STARTUP_BANNER, fg=typer.colors.MAGENTA, bold=True))
     config = _ensure_config()
     _prepare_database()
+
+    if ensure_comic_tags_cascade():
+        logger.info("comic_tags lacked ON DELETE CASCADE and has been rebuilt.")
 
     wait_for_library(config)
 

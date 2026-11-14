@@ -9,9 +9,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Set, Tuple
 
+from sqlalchemy import delete
 from sqlmodel import Session, select, col, func
 
-from .models import Folder, Comic, ComicMetadata
+from .models import Folder, Comic, ComicMetadata, ComicTag
 from .config import IssuedConfig
 from .path_utils import to_relative, to_absolute
 from .comicinfo import ComicMetadataUpdate
@@ -155,6 +156,17 @@ class Repository:
     def get_comic_by_uuid(self, comic_uuid: str) -> Optional[Comic]:
         return self.session.exec(select(Comic).where(Comic.uuid == comic_uuid)).first()
 
+    def _delete_tag_links(self, comic_ids: List[int]) -> None:
+        """Remove comic_tags rows for the given comics.
+
+        Databases created through ``SQLModel.metadata.create_all`` before the
+        tags migration have a ``comic_tags`` table without ``ON DELETE CASCADE``,
+        so deleting a tagged comic would violate the foreign key.  Removing the
+        links explicitly works whatever the table definition is.
+        """
+        if comic_ids:
+            self.session.exec(delete(ComicTag).where(col(ComicTag.comic_id).in_(comic_ids)))
+
     def delete_comic_by_path(self, path: Path) -> List[str]:
         """Delete comic by absolute path and return deleted comic UUIDs."""
         rel_path_str = to_relative(path, self.library_root)
@@ -162,6 +174,7 @@ class Repository:
         comics = self.session.exec(statement).all()
         uuids = [c.uuid for c in comics]
 
+        self._delete_tag_links([c.id for c in comics])
         for comic in comics:
             self.session.delete(comic)
 
@@ -175,6 +188,7 @@ class Repository:
         comics = self.session.exec(statement).all()
         uuids = [c.uuid for c in comics]
 
+        self._delete_tag_links([c.id for c in comics])
         for comic in comics:
             self.session.delete(comic)
 

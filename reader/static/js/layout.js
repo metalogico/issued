@@ -3,7 +3,9 @@
   const sizeStorageKey = 'issued-thumbnail-size';
   const borderlessStorageKey = 'issued-borderless-collage';
   const hideFileTypesStorageKey = 'issued-hide-file-types';
+  const sortStorageKey = 'issued-sort-order';
   const validWidths = ['fixed', 'full'];
+  const validSorts = ['az', 'za', 'newest', 'oldest'];
   const validSizes = ['tiny', 'extra-small', 'small', 'medium', 'large', 'extra-large', 'huge'];
   const sizeLabels = {
     tiny: 'Tiny',
@@ -66,6 +68,65 @@
   applySize(root.dataset.thumbnailSize);
   applyBorderless(root.dataset.borderless);
   applyHideFileTypes(root.dataset.hideFileTypes);
+
+  // --- Comic sorting (grid and table of the comics section only) ---
+
+  const titleOf = (element) => element.dataset.title || '';
+  const addedOf = (element) => element.dataset.added || '';
+  const compareText = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  const compareAdded = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  const sortComparators = {
+    az: (a, b) => compareText(titleOf(a), titleOf(b)) || compareAdded(addedOf(a), addedOf(b)),
+    za: (a, b) => compareText(titleOf(b), titleOf(a)) || compareAdded(addedOf(b), addedOf(a)),
+    newest: (a, b) => compareAdded(addedOf(b), addedOf(a)) || compareText(titleOf(a), titleOf(b)),
+    oldest: (a, b) => compareAdded(addedOf(a), addedOf(b)) || compareText(titleOf(a), titleOf(b)),
+  };
+
+  const sortChildren = (container, childSelector, compare) => {
+    const children = Array.from(container.querySelectorAll(`:scope > ${childSelector}`));
+    children.sort(compare).forEach((child) => container.appendChild(child));
+  };
+
+  // Views opt out of sorting with data-sortable="false" (Recent keeps server order).
+  const isSortableView = () => {
+    const section = document.getElementById('comics-section');
+    return !!section && section.dataset.isSearch !== 'true' && section.dataset.sortable !== 'false';
+  };
+
+  const applySortToDom = (order) => {
+    const compare = sortComparators[order];
+    if (!compare || !isSortableView()) return;
+    const section = document.getElementById('comics-section');
+    section.querySelectorAll('.comics-grid-list').forEach((list) => sortChildren(list, 'li[data-title]', compare));
+    section.querySelectorAll('.comics-table-list tbody').forEach((tbody) => sortChildren(tbody, 'tr[data-title]', compare));
+  };
+
+  const applySort = (order, shouldPersist = false) => {
+    // Leave non-sortable views alone: no DOM reorder, no state, no persisted preference.
+    if (!isSortableView()) return;
+    const normalizedOrder = validSorts.includes(order) ? order : 'az';
+    // State lives under its own attribute name: using data-sort-order here would make
+    // <html> match the [data-sort-order] queries below and re-sort on every click.
+    root.dataset.comicSort = normalizedOrder;
+    document.querySelectorAll('[data-sort-order]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.sortOrder === normalizedOrder));
+    });
+    applySortToDom(normalizedOrder);
+    if (shouldPersist) persist(sortStorageKey, normalizedOrder);
+  };
+
+  let savedSort = null;
+  try {
+    savedSort = localStorage.getItem(sortStorageKey);
+  } catch (_) {}
+  applySort(savedSort);
+
+  document.querySelectorAll('[data-sort-order]').forEach((button) => {
+    button.addEventListener('click', () => applySort(button.dataset.sortOrder, true));
+  });
+
+  // The comics section is replaced by htmx (e.g. "Complete all"): re-apply the order.
+  document.addEventListener('htmx:afterSwap', () => applySort(root.dataset.comicSort));
 
   if (!toggle || !panel) return;
 

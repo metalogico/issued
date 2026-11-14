@@ -45,3 +45,16 @@ def test_library_grids_opt_in_to_cover_sizing():
 
     assert "cover-grid" in folder_grid
     assert comics_section.count("cover-grid") == 2
+
+
+def test_sorting_is_opt_out_per_view():
+    script = (PROJECT_ROOT / "reader" / "static" / "js" / "layout.js").read_text(encoding="utf-8")
+    comics_section = (PROJECT_ROOT / "reader" / "templates" / "partials" / "comics-section.html").read_text(encoding="utf-8")
+    browser = (PROJECT_ROOT / "reader" / "templates" / "browser.html").read_text(encoding="utf-8")
+    browse_routes = (PROJECT_ROOT / "reader" / "routes" / "browse.py").read_text(encoding="utf-8")
+
+    assert "section.dataset.sortable !== 'false'" in script
+    assert "data-sortable=" in comics_section
+    assert "sortable|default(true)" in comics_section
+    assert "sortable|default(true)" in browser
+    assert '"sortable": False' in browse_routes

@@ -19,7 +19,8 @@
     </thead>
     <tbody class="divide-y divide-gray-50">
       {% for c in comics_list %}
-      <tr class="comic-table-row group transition-colors hover:bg-violet-50">
+      <tr class="comic-table-row group transition-colors hover:bg-violet-50" data-title="{{ c.title or c.filename }}"
+        data-added="{{ c.last_scanned_at or '' }}">
         <td class="w-14 py-1 pl-3 pr-2">
           <div class="comic-thumb-zoom-wrap relative overflow-hidden rounded-lg" style="width:44px">
             <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}" class="block">
@@ -94,7 +95,8 @@
 </div>
 {% endmacro %}
 
-<section class="mb-8" id="comics-section" data-is-search="{{ 'true' if is_search else 'false' }}">
+<section class="mb-8" id="comics-section" data-is-search="{{ 'true' if is_search else 'false' }}"
+  data-sortable="{{ 'true' if sortable|default(true) and not is_search else 'false' }}">
   <div class="mb-4 flex items-center justify-between">
     <h2 class="text-lg font-bold text-gray-800">
       {% if is_search %}Results{% else %}Comics{% endif %}
@@ -137,7 +139,7 @@
     <!-- Grid view -->
     <ul class="comics-grid-list cover-grid grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
       {% for c in group.comics %}
-      <li class="group relative">
+      <li class="group relative" data-title="{{ c.title or c.filename }}" data-added="{{ c.last_scanned_at or '' }}">
         <div
           class="comic-card overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white">
           <div class="comic-cover relative aspect-[2/3] w-full">
@@ -190,7 +192,7 @@
   <!-- Grid view -->
   <ul class="comics-grid-list cover-grid grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
     {% for c in comics %}
-    <li class="group relative">
+    <li class="group relative" data-title="{{ c.title or c.filename }}" data-added="{{ c.last_scanned_at or '' }}">
       <div
         class="comic-card overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white">
         <div class="comic-cover relative aspect-[2/3] w-full">

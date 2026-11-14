@@ -45,9 +45,10 @@
   }
 }
 
-/* Touch: always show edit button */
+/* Touch: always show edit and download buttons */
 @media (hover: none) and (pointer: coarse) {
-  .comic-cover-btn.comic-info-btn {
+  .comic-cover-btn.comic-info-btn,
+  .comic-cover-btn.comic-download-btn {
     opacity: 1;
   }
 }

@@ -158,6 +158,11 @@
               data-comic-uuid="{{ c.uuid }}" title="Edit metadata">
               <i data-lucide="square-pen" class="h-[14px] w-[14px]"></i>
             </button>
+            <a href="{{ url_path(request, 'api_comic_download', comic_uuid=c.uuid) }}"
+              class="comic-cover-btn comic-download-btn absolute bottom-2 right-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md backdrop-blur-sm transition opacity-0 hover:bg-white active:scale-95 touch-manipulation"
+              title="Download {{ c.filename }}" aria-label="Download {{ c.filename }}">
+              <i data-lucide="download" class="h-[14px] w-[14px]"></i>
+            </a>
             <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}"
               class="comic-cover-btn absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity pointer-events-none">
               <span
@@ -206,6 +211,11 @@
             data-comic-uuid="{{ c.uuid }}" title="Edit metadata">
             <i data-lucide="square-pen" class="h-[14px] w-[14px]"></i>
           </button>
+          <a href="{{ url_path(request, 'api_comic_download', comic_uuid=c.uuid) }}"
+            class="comic-cover-btn comic-download-btn absolute bottom-2 right-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md backdrop-blur-sm transition opacity-0 hover:bg-white active:scale-95 touch-manipulation"
+            title="Download {{ c.filename }}" aria-label="Download {{ c.filename }}">
+            <i data-lucide="download" class="h-[14px] w-[14px]"></i>
+          </a>
           <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}"
             class="comic-cover-btn absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity pointer-events-none">
             <span

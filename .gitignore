@@ -43,6 +43,7 @@ data/
 .cursor/
 .agents/
 .claude/
+design/
 .windsurf/
 skills-lock.json
 

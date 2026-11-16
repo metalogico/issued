@@ -2,6 +2,7 @@ import {
   createReaderInteractions,
   MOBILE_READER_MEDIA_QUERY,
 } from './reader-interactions.js';
+import { createReaderSizing } from './reader-sizing.js';
 
 /**
  * Issued web reader – page navigation, fullscreen, progress tracking, spread view
@@ -54,6 +55,7 @@ import {
   let coverSeparate = true;
   let completed = wasCompleted;
   let interactions = null;
+  let sizing = null;
   let mobileActionsOpen = false;
 
   // --- Helpers ---
@@ -157,6 +159,7 @@ import {
       setSpinner(false);
       loading = false;
       if (pagesEl) pagesEl.classList.toggle('spread-mode', !!rightPage);
+      sizing?.refresh({ reset: true });
     };
 
     // Load left page
@@ -320,6 +323,15 @@ import {
     isDisabled: () => loading,
   });
 
+  sizing = createReaderSizing({
+    reader,
+    viewport: imageWrap,
+    content: pagesEl,
+    images: [img, imgRight].filter(Boolean),
+    buttons: Array.from(reader.querySelectorAll('[data-reader-fit]')),
+    interactions,
+  });
+
   // --- Fullscreen ---
 
   const toggleFullscreen = () => {
@@ -389,6 +401,9 @@ import {
   comicLinks.forEach((link) => link.addEventListener('click', navigateToComic));
   btnSpread.addEventListener('click', () => { toggleSpread(); showControls(); });
   btnCoverSep.addEventListener('click', () => { toggleCoverSep(); showControls(); });
+  reader.querySelectorAll('[data-reader-fit]').forEach(button => {
+    button.addEventListener('click', () => { closeMobileActions(true); showControls(); });
+  });
 
   // --- Keyboard ---
 
@@ -427,6 +442,7 @@ import {
 
   updatePage(initialPage);
   window.addEventListener('pagehide', () => {
+    sizing?.destroy();
     interactions?.destroy();
     mobileReaderQuery.removeEventListener('change', syncMobileActionsLayout);
   }, { once: true });

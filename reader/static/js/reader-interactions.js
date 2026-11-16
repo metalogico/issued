@@ -64,6 +64,8 @@ export function createReaderInteractions({
   let lastTap = null;
   let pointer = null;
   let centerTapTimer = null;
+  let fullscreenSizing = false;
+  let fullscreenOverflow = 'hidden';
 
   const panzoom = Panzoom(content, {
     minScale: 1,
@@ -104,7 +106,7 @@ export function createReaderInteractions({
   };
 
   // Panzoom's built-in containment does not account for a flex-centered element.
-  // The spread therefore settles against its actual rendered edges after a drag.
+  // These pages settle against their actual rendered edges after a drag.
   const constrainSpreadPan = ({ animate = false } = {}) => {
     if (!zoomed || !customContainment) return;
 
@@ -145,7 +147,7 @@ export function createReaderInteractions({
 
   const setZoomed = (value, targetScale = ZOOM_SCALE) => {
     zoomed = value;
-    customContainment = value && isMobileSpread();
+    customContainment = value && (fullscreenSizing || isMobileSpread());
     viewport.classList.toggle('is-zoomed', value);
     viewport.dataset.zoomed = value ? 'true' : 'false';
     viewport.setAttribute(
@@ -159,6 +161,7 @@ export function createReaderInteractions({
       disablePan: !value,
       maxScale: value ? targetScale : ZOOM_SCALE,
       touchAction: value ? 'none' : 'manipulation',
+      overflow: value || !fullscreenSizing ? 'hidden' : fullscreenOverflow,
     });
   };
 
@@ -178,7 +181,10 @@ export function createReaderInteractions({
     const bounds = innerBounds(viewport);
     const contentRect = content.getBoundingClientRect();
     const contentStyle = window.getComputedStyle(content);
-    const focal = {
+    const focal = fullscreenSizing ? {
+      x: (clientX - contentRect.left - contentRect.width / 2) * targetScale,
+      y: (clientY - contentRect.top - contentRect.height / 2) * targetScale,
+    } : {
       x: (
         clientX
         - bounds.left
@@ -301,6 +307,18 @@ export function createReaderInteractions({
   };
   const resize = () => resetZoom({ animate: false });
 
+  const setFullscreenSizing = enabled => {
+    resetZoom({ animate: false });
+    fullscreenSizing = enabled;
+    setZoomed(false);
+  };
+
+  const setFullscreenOverflow = overflow => {
+    if (fullscreenOverflow === overflow) return;
+    fullscreenOverflow = overflow;
+    if (fullscreenSizing && !zoomed) panzoom.setOptions({ overflow });
+  };
+
   viewport.addEventListener('pointerdown', pointerDown);
   viewport.addEventListener('pointermove', pointerMove);
   viewport.addEventListener('pointerup', pointerUp);
@@ -327,6 +345,8 @@ export function createReaderInteractions({
     destroy,
     isZoomed: () => zoomed,
     resetZoom,
+    setFullscreenSizing,
+    setFullscreenOverflow,
     toggleZoomAtCenter,
   };
 }

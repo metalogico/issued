@@ -12,6 +12,9 @@ venv/
 library.db
 library.db-shm
 library.db-wal
+library.db-journal
+library.db-trace
+library.db.bak
 
 # Thumbnails
 thumbnails/
@@ -31,9 +34,6 @@ config.ini
 issued.log
 issued.log.*
 
-# Migration backup
-library.db.bak
-
 # Pytest
 .pytest_cache/
 
@@ -43,8 +43,12 @@ data/
 .cursor/
 .agents/
 .claude/
+design/
 .windsurf/
 skills-lock.json
 
 # Local development plans
 .notes/
+
+# Local Docker update helper
+/update-docker-local.sh

@@ -18,15 +18,16 @@ def to_relative(absolute_path: Path, library_root: Path) -> str:
         library_root: The library root path from config
         
     Returns:
-        String representation of the relative path
-        
+        String representation of the relative path, always with forward
+        slashes so that the ``LIKE '<folder>/%'`` queries match on Windows
+
     Example:
         >>> to_relative(Path("/library/Comics/Marvel/X-Men.cbz"), Path("/library/Comics"))
         "Marvel/X-Men.cbz"
     """
     try:
         rel_path = absolute_path.relative_to(library_root)
-        return str(rel_path)
+        return rel_path.as_posix()
     except ValueError:
         return str(absolute_path)
 

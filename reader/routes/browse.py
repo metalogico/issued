@@ -170,6 +170,7 @@ def browse_last_added(request: Request, limit: int = 50):
             "comics": comics,
             "grouped_comics": [],
             "is_search": False,
+            "sortable": False,
             "show_last_added": False,
             "last_added_comics": [],
             "continue_reading_comics": [],
@@ -322,7 +323,7 @@ def browse_tags(request: Request):
     )
 
 
-@router.get("/tags/{tag_name}")
+@router.get("/tags/{tag_name:path}")
 def browse_tag(request: Request, tag_name: str):
     """Browse all comics with a given tag."""
     with db_connection() as conn:

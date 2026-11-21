@@ -4,6 +4,11 @@ Simple web UI for browsing and reading comics from the Issued library.
 
 Supports CBZ, CBR, CB7, and PDF formats with automatic page extraction and rendering.
 
+In fullscreen, the controls beside the single/two-page toggle offer **Fit width**
+and **Fit height** (the default). Both preserve page aspect ratios, work with
+two-page spreads, and adjust when the window is resized. Pages and spreads can
+scroll when they exceed the viewport.
+
 ## Structure
 
 - **`routes/`** – FastAPI router: browse (root, folder, recent), reader view, API for comic info and page images.

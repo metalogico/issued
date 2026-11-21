@@ -4,7 +4,7 @@ from __future__ import annotations
 
 
 _COMICS_WITH_META = """
-    SELECT c.uuid, c.filename, c.page_count,
+    SELECT c.uuid, c.filename, c.page_count, c.last_scanned_at,
            (m.is_completed = 1) AS is_completed,
            m.title, m.publisher, m.year, m.artist, m.writer, m.penciller,
            m.score, m.last_read_at,

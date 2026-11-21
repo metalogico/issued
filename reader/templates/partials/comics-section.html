@@ -1,3 +1,4 @@
+{% from 'macros/comic-filename.html' import comic_filename, comic_filename_text %}
 {% macro comic_table(comics_list, request) %}
 <div class="comics-table-wrap overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-md">
   <table class="w-full min-w-[640px] border-collapse text-sm">
@@ -18,7 +19,8 @@
     </thead>
     <tbody class="divide-y divide-gray-50">
       {% for c in comics_list %}
-      <tr class="comic-table-row group transition-colors hover:bg-violet-50">
+      <tr class="comic-table-row group transition-colors hover:bg-violet-50" data-title="{{ c.title or c.filename }}"
+        data-added="{{ c.last_scanned_at or '' }}">
         <td class="w-14 py-1 pl-3 pr-2">
           <div class="comic-thumb-zoom-wrap relative overflow-hidden rounded-lg" style="width:44px">
             <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}" class="block">
@@ -29,7 +31,7 @@
         </td>
         <td class="py-2 pr-4">
           <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}" class="block">
-            <p class="font-semibold text-gray-900 leading-snug line-clamp-2">{{ c.filename }}</p>
+            <p class="font-semibold text-gray-900 leading-snug line-clamp-2">{{ comic_filename_text(c.filename) }}</p>
           </a>
         </td>
         <td class="py-2 pr-4 text-gray-700">
@@ -93,7 +95,8 @@
 </div>
 {% endmacro %}
 
-<section class="mb-8" id="comics-section" data-is-search="{{ 'true' if is_search else 'false' }}">
+<section class="mb-8" id="comics-section" data-is-search="{{ 'true' if is_search else 'false' }}"
+  data-sortable="{{ 'true' if sortable|default(true) and not is_search else 'false' }}">
   <div class="mb-4 flex items-center justify-between">
     <h2 class="text-lg font-bold text-gray-800">
       {% if is_search %}Results{% else %}Comics{% endif %}
@@ -136,7 +139,7 @@
     <!-- Grid view -->
     <ul class="comics-grid-list cover-grid grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
       {% for c in group.comics %}
-      <li class="group relative">
+      <li class="group relative" data-title="{{ c.title or c.filename }}" data-added="{{ c.last_scanned_at or '' }}">
         <div
           class="comic-card overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white">
           <div class="comic-cover relative aspect-[2/3] w-full">
@@ -157,6 +160,11 @@
               data-comic-uuid="{{ c.uuid }}" title="Edit metadata">
               <i data-lucide="square-pen" class="h-[14px] w-[14px]"></i>
             </button>
+            <a href="{{ url_path(request, 'api_comic_download', comic_uuid=c.uuid) }}"
+              class="comic-cover-btn comic-download-btn absolute bottom-2 right-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md backdrop-blur-sm transition opacity-0 hover:bg-white active:scale-95 touch-manipulation"
+              title="Download {{ c.filename }}" aria-label="Download {{ c.filename }}">
+              <i data-lucide="download" class="h-[14px] w-[14px]"></i>
+            </a>
             <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}"
               class="comic-cover-btn absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity pointer-events-none">
               <span
@@ -165,7 +173,7 @@
           </div>
           <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}"
             class="comic-card-details block bg-white p-3">
-            <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.filename }}</span>
+            {{ comic_filename(c.filename) }}
             {% if c.get('page_count') and c.page_count > 0 %}
             <span class="mt-1 block text-center text-xs text-gray-500">{{ c.page_count }} pages</span>
             {% endif %}
@@ -184,7 +192,7 @@
   <!-- Grid view -->
   <ul class="comics-grid-list cover-grid grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
     {% for c in comics %}
-    <li class="group relative">
+    <li class="group relative" data-title="{{ c.title or c.filename }}" data-added="{{ c.last_scanned_at or '' }}">
       <div
         class="comic-card overflow-hidden rounded-2xl shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1 bg-white">
         <div class="comic-cover relative aspect-[2/3] w-full">
@@ -205,6 +213,11 @@
             data-comic-uuid="{{ c.uuid }}" title="Edit metadata">
             <i data-lucide="square-pen" class="h-[14px] w-[14px]"></i>
           </button>
+          <a href="{{ url_path(request, 'api_comic_download', comic_uuid=c.uuid) }}"
+            class="comic-cover-btn comic-download-btn absolute bottom-2 right-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md backdrop-blur-sm transition opacity-0 hover:bg-white active:scale-95 touch-manipulation"
+            title="Download {{ c.filename }}" aria-label="Download {{ c.filename }}">
+            <i data-lucide="download" class="h-[14px] w-[14px]"></i>
+          </a>
           <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}"
             class="comic-cover-btn absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity pointer-events-none">
             <span
@@ -213,7 +226,7 @@
         </div>
         <a href="{{ url_path(request, 'reader_view', comic_uuid=c.uuid) }}"
           class="comic-card-details block bg-white p-3">
-          <span class="line-clamp-2 block text-center text-sm font-medium text-gray-800">{{ c.filename }}</span>
+          {{ comic_filename(c.filename) }}
           {% if c.get('page_count') and c.page_count > 0 %}
           <span class="mt-1 block text-center text-xs text-gray-500">{{ c.page_count }} pages</span>
           {% endif %}

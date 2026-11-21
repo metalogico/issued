@@ -518,7 +518,7 @@ def scan_library(
         if base == library_root:
             statement = select(Comic)
         else:
-            statement = select(Comic).where(col(Comic.path).like(f"{base_rel_str}/%"))
+            statement = select(Comic).where(col(Comic.path).startswith(f"{base_rel_str}/", autoescape=True))
 
         db_comics = session.exec(statement).all()
 
@@ -537,7 +537,7 @@ def scan_library(
             folder_statement = select(Folder)
         else:
             folder_statement = select(Folder).where(
-                (Folder.path == base_rel_str) | (col(Folder.path).like(f"{base_rel_str}/%"))
+                (Folder.path == base_rel_str) | (col(Folder.path).startswith(f"{base_rel_str}/", autoescape=True))
             )
         db_folders = session.exec(folder_statement).all()
 

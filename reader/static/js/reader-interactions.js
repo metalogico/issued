@@ -49,6 +49,7 @@ export function createReaderInteractions({
   content,
   onPrevious,
   onNext,
+  onCenterTap = () => {},
   isDisabled = () => false,
 }) {
   if (!viewport || !content) {
@@ -62,6 +63,9 @@ export function createReaderInteractions({
   let constraintTimer = null;
   let lastTap = null;
   let pointer = null;
+  let centerTapTimer = null;
+  let fullscreenSizing = false;
+  let fullscreenOverflow = 'hidden';
 
   const panzoom = Panzoom(content, {
     minScale: 1,
@@ -96,8 +100,13 @@ export function createReaderInteractions({
     constraintTimer = null;
   };
 
+  const clearCenterTap = () => {
+    window.clearTimeout(centerTapTimer);
+    centerTapTimer = null;
+  };
+
   // Panzoom's built-in containment does not account for a flex-centered element.
-  // The spread therefore settles against its actual rendered edges after a drag.
+  // These pages settle against their actual rendered edges after a drag.
   const constrainSpreadPan = ({ animate = false } = {}) => {
     if (!zoomed || !customContainment) return;
 
@@ -138,7 +147,7 @@ export function createReaderInteractions({
 
   const setZoomed = (value, targetScale = ZOOM_SCALE) => {
     zoomed = value;
-    customContainment = value && isMobileSpread();
+    customContainment = value && (fullscreenSizing || isMobileSpread());
     viewport.classList.toggle('is-zoomed', value);
     viewport.dataset.zoomed = value ? 'true' : 'false';
     viewport.setAttribute(
@@ -152,11 +161,15 @@ export function createReaderInteractions({
       disablePan: !value,
       maxScale: value ? targetScale : ZOOM_SCALE,
       touchAction: value ? 'none' : 'manipulation',
+      overflow: value || !fullscreenSizing ? 'hidden' : fullscreenOverflow,
     });
   };
 
   const resetZoom = ({ animate = true } = {}) => {
     lastTap = null;
+    // A page turn can land inside the double-tap window of a center tap; without this the
+    // pending tap would toggle the toolbars on the new page.
+    clearCenterTap();
     clearConstraintTimer();
     if (!zoomed && panzoom.getScale() === 1) return;
     panzoom.reset({ ...animationOptions(animate), contain: false });
@@ -168,7 +181,10 @@ export function createReaderInteractions({
     const bounds = innerBounds(viewport);
     const contentRect = content.getBoundingClientRect();
     const contentStyle = window.getComputedStyle(content);
-    const focal = {
+    const focal = fullscreenSizing ? {
+      x: (clientX - contentRect.left - contentRect.width / 2) * targetScale,
+      y: (clientY - contentRect.top - contentRect.height / 2) * targetScale,
+    } : {
       x: (
         clientX
         - bounds.left
@@ -216,11 +232,20 @@ export function createReaderInteractions({
       distance(tap, lastTap) <= DOUBLE_TAP_DISTANCE_PX
     ) {
       lastTap = null;
+      clearCenterTap();
       if (zoomed) resetZoom();
       else zoomAt(tap.x, tap.y);
       return;
     }
     lastTap = tap;
+    // A single tap is only known once the double-tap window has passed without a second tap.
+    if (!zoomed) {
+      clearCenterTap();
+      centerTapTimer = window.setTimeout(() => {
+        centerTapTimer = null;
+        onCenterTap();
+      }, DOUBLE_TAP_MS);
+    }
   };
 
   const pointerDown = (event) => {
@@ -282,6 +307,18 @@ export function createReaderInteractions({
   };
   const resize = () => resetZoom({ animate: false });
 
+  const setFullscreenSizing = enabled => {
+    resetZoom({ animate: false });
+    fullscreenSizing = enabled;
+    setZoomed(false);
+  };
+
+  const setFullscreenOverflow = overflow => {
+    if (fullscreenOverflow === overflow) return;
+    fullscreenOverflow = overflow;
+    if (fullscreenSizing && !zoomed) panzoom.setOptions({ overflow });
+  };
+
   viewport.addEventListener('pointerdown', pointerDown);
   viewport.addEventListener('pointermove', pointerMove);
   viewport.addEventListener('pointerup', pointerUp);
@@ -299,6 +336,7 @@ export function createReaderInteractions({
     content.removeEventListener('panzoomend', panEnd);
     window.removeEventListener('resize', resize);
     clearConstraintTimer();
+    clearCenterTap();
     panzoom.destroy();
     panzoom.resetStyle();
   };
@@ -307,6 +345,8 @@ export function createReaderInteractions({
     destroy,
     isZoomed: () => zoomed,
     resetZoom,
+    setFullscreenSizing,
+    setFullscreenOverflow,
     toggleZoomAtCenter,
   };
 }

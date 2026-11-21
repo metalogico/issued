@@ -22,6 +22,7 @@ from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from starlette.types import Scope
 
 from ..logging_config import get_logger  # noqa: F401 – keep for patching compat
 from ..config import get_config  # noqa: F401 – re-exported for monkeypatching in tests
@@ -66,13 +67,27 @@ async def _lifespan(app: FastAPI):
     yield
 
 
+class RevalidatedStaticFiles(StaticFiles):
+    """Static files the browser must revalidate before reusing.
+
+    Without Cache-Control a browser may reuse a cached script for hours after an
+    update, so a new template can run against an old reader.js. ``no-cache`` keeps
+    the cached copy but checks its ETag first: an unchanged file costs a 304.
+    """
+
+    async def get_response(self, path: str, scope: Scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 app = FastAPI(title="Issued OPDS", lifespan=_lifespan)
 app.add_middleware(ReaderAuthMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(_opds_router)
 app.include_router(reader_router, prefix="/reader")
-app.mount("/reader/static", StaticFiles(directory=str(STATIC_DIR)), name="reader_static")
+app.mount("/reader/static", RevalidatedStaticFiles(directory=str(STATIC_DIR)), name="reader_static")
 
 
 def run_server(

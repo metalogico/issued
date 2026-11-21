@@ -159,22 +159,27 @@ def run_migrations(backup: bool = True) -> None:
     alembic_command.upgrade(_alembic_cfg(), "head")
 
 
-def stamp_if_needed() -> None:
-    """Stamp an existing (legacy) database to the current head.
+# Last revision that only creates tables. ``create_all`` already gives a
+# legacy DB everything up to here; later revisions rewrite data and must run.
+LEGACY_BASELINE = "0003"
 
-    Called by ``serve`` on startup.  If the DB already has an
+
+def stamp_if_needed() -> None:
+    """Stamp an existing (legacy) database to ``LEGACY_BASELINE``.
+
+    Called before ``serve`` and ``scan`` touch the DB.  If the DB already has an
     alembic_version row this is a no-op.  If the DB exists but has no
     alembic_version table (i.e. it was created by the old
-    ``create_all`` path), we stamp it to head so that future
-    ``upgrade`` calls know the baseline.
+    ``create_all`` path), we stamp it to the baseline so that the following
+    ``upgrade`` runs the data migrations it has never seen.
     """
     if not DB_PATH.exists():
         return                          # nothing to stamp; init_db will create it
     if _alembic_version_exists():
         return                          # already managed
     # Legacy DB — tables exist but no version info.  Stamp without running
-    # any migration SQL (tables are already there).
-    alembic_command.stamp(_alembic_cfg(), "head")
+    # the table-creating migrations (tables are already there).
+    alembic_command.stamp(_alembic_cfg(), LEGACY_BASELINE)
 
 
 def get_status() -> tuple[str | None, str]:

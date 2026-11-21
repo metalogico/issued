@@ -45,9 +45,10 @@
   }
 }
 
-/* Touch: always show edit button */
+/* Touch: always show edit and download buttons */
 @media (hover: none) and (pointer: coarse) {
-  .comic-cover-btn.comic-info-btn {
+  .comic-cover-btn.comic-info-btn,
+  .comic-cover-btn.comic-download-btn {
     opacity: 1;
   }
 }
@@ -77,6 +78,30 @@
 
 .btn-view-active:hover {
   background-color: #ddd6fe;
+}
+
+.reader-sizing-controls {
+  display: none;
+}
+
+.reader-sizing-controls svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.reader-sizing-controls button.btn-view-active {
+  background-color: #ede9fe;
+  color: #7c3aed;
+}
+
+.reader-sizing-controls button.btn-view-active:hover {
+  background-color: #ddd6fe;
+}
+
+html[data-theme="dark"] .reader-sizing-controls button.btn-view-active {
+  background-color: #3b2464 !important;
+  color: #ddd6fe !important;
 }
 
 #btn-cover-sep:disabled {
@@ -182,13 +207,11 @@
 }
 
 /* --- Fullscreen reader --- */
-.reader:fullscreen,
-.reader:-webkit-full-screen {
+.reader.fullscreen-sizing {
   position: relative;
 }
 
-.reader:fullscreen .reader-controls,
-.reader:-webkit-full-screen .reader-controls {
+.reader.fullscreen-sizing .reader-controls {
   position: absolute;
   top: 0;
   left: 0;
@@ -197,8 +220,7 @@
   margin-bottom: 0;
 }
 
-.reader:fullscreen .reader-navigation,
-.reader:-webkit-full-screen .reader-navigation {
+.reader.fullscreen-sizing .reader-navigation {
   position: absolute;
   bottom: 3.5rem;
   left: 0;
@@ -207,8 +229,7 @@
   margin-top: 0;
 }
 
-.reader:fullscreen .reader-hints,
-.reader:-webkit-full-screen .reader-hints {
+.reader.fullscreen-sizing .reader-hints {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -217,36 +238,30 @@
   margin-top: 0;
 }
 
-.reader:fullscreen .reader-image-wrap,
-.reader:-webkit-full-screen .reader-image-wrap {
+.reader.fullscreen-sizing .reader-image-wrap {
   flex: 1;
   min-height: 0;
   margin: 0;
 }
 
-.reader:fullscreen .reader-image-wrap img,
-.reader:-webkit-full-screen .reader-image-wrap img {
-  max-height: 100%;
-}
-
-:fullscreen .reader-controls.hidden {
+.reader.fullscreen-sizing .reader-controls.hidden {
   transform: translateY(-100%);
   opacity: 0;
   pointer-events: none;
 }
 
-:fullscreen .reader-navigation.hidden {
+.reader.fullscreen-sizing .reader-navigation.hidden {
   transform: translateY(100%);
   opacity: 0;
   pointer-events: none;
 }
 
-:fullscreen .reader-hints.hidden {
+.reader.fullscreen-sizing .reader-hints.hidden {
   opacity: 0;
   pointer-events: none;
 }
 
-:fullscreen.cursor-hidden {
+.reader.fullscreen-sizing.cursor-hidden {
   cursor: none;
 }
 
@@ -577,6 +592,90 @@
   }
 }
 
+/* Fullscreen sizing overrides the ordinary single-page and spread limits. */
+.reader-page .reader.fullscreen-sizing {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.reader.fullscreen-sizing .reader-image-wrap {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.reader.fullscreen-sizing .reader-pages {
+  width: max-content;
+  height: max-content;
+  max-width: none;
+  max-height: none;
+  flex: none;
+  margin: auto;
+  align-items: flex-start;
+}
+
+.reader.fullscreen-sizing .reader-pages img {
+  max-width: none;
+  max-height: none;
+  flex: none;
+}
+
+.reader.fullscreen-sizing .reader-sizing-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.25rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid #e5e7eb;
+}
+
+html[data-theme="dark"] .reader.fullscreen-sizing .reader-sizing-controls {
+  border-color: #374151;
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .reader.fullscreen-sizing .reader-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .reader.fullscreen-sizing .reader-secondary-actions {
+    flex-basis: 100%;
+    order: 3;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 639px) {
+  .reader.fullscreen-sizing .reader-sizing-controls {
+    width: 100%;
+    margin: 0;
+    padding: 0.5rem 0 0;
+    border-width: 1px 0 0;
+  }
+
+  .reader-sizing-controls button {
+    flex: 1;
+    min-width: 0;
+    min-height: 76px;
+    height: auto;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem;
+  }
+
+  .reader-sizing-controls .reader-mobile-action-label {
+    font-size: 0.75rem;
+    text-align: center;
+    white-space: normal;
+  }
+}
+
 /* --- Keyframes --- */
 @keyframes fadeIn {
   from {
@@ -830,6 +929,10 @@ html[data-borderless="true"] .folder-thumb {
 html[data-borderless="true"] .folder-preview-images {
   gap: 0 !important;
   padding: 0 !important;
+}
+
+html[data-hide-file-types="true"] .comic-filename-extension {
+  display: none;
 }
 
 .display-switch[aria-checked="true"] {

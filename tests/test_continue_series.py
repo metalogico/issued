@@ -263,7 +263,7 @@ def test_reader_renders_issue_navigation_and_preserves_completed_state(continue_
     assert 'id="reader-progress-error"' in response.text
 
     script = Path(importlib.import_module("reader").__path__[0]) / "static/js/reader.js"
-    script_text = script.read_text()
+    script_text = script.read_text(encoding="utf-8")
     assert "persistProgress(lastVisiblePage, { showError: true })" in script_text
     assert "if (saved) window.location.assign(link.href)" in script_text
 

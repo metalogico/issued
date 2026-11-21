@@ -2,6 +2,7 @@ import {
   createReaderInteractions,
   MOBILE_READER_MEDIA_QUERY,
 } from './reader-interactions.js';
+import { createReaderSizing } from './reader-sizing.js';
 
 /**
  * Issued web reader – page navigation, fullscreen, progress tracking, spread view
@@ -54,6 +55,7 @@ import {
   let coverSeparate = true;
   let completed = wasCompleted;
   let interactions = null;
+  let sizing = null;
   let mobileActionsOpen = false;
 
   // --- Helpers ---
@@ -157,6 +159,7 @@ import {
       setSpinner(false);
       loading = false;
       if (pagesEl) pagesEl.classList.toggle('spread-mode', !!rightPage);
+      sizing?.refresh({ reset: true });
     };
 
     // Load left page
@@ -316,7 +319,17 @@ import {
     content: pagesEl,
     onPrevious: () => navigate(-1),
     onNext: () => navigate(1),
+    onCenterTap: () => toggleControlsFromTap(),
     isDisabled: () => loading,
+  });
+
+  sizing = createReaderSizing({
+    reader,
+    viewport: imageWrap,
+    content: pagesEl,
+    images: [img, imgRight].filter(Boolean),
+    buttons: Array.from(reader.querySelectorAll('[data-reader-fit]')),
+    interactions,
   });
 
   // --- Fullscreen ---
@@ -364,7 +377,22 @@ import {
     }
   });
 
-  reader.addEventListener('mousemove', showControls);
+  // On touch screens a tap is the only way to bring the toolbars back once they hide.
+  const toggleControlsFromTap = () => {
+    if (!document.fullscreenElement) return;
+    if (controlEls.some(el => el?.classList.contains('hidden'))) {
+      showControls();
+    } else {
+      clearTimeout(hideTimer);
+      setControlsVisible(false);
+    }
+  };
+
+  // Touch browsers also emit a compatibility mousemove on every tap, which would bring
+  // the toolbars back on each page turn; only a real mouse reveals them by moving.
+  reader.addEventListener('pointermove', (event) => {
+    if (event.pointerType === 'mouse') showControls();
+  });
 
   // --- Button events ---
 
@@ -373,6 +401,9 @@ import {
   comicLinks.forEach((link) => link.addEventListener('click', navigateToComic));
   btnSpread.addEventListener('click', () => { toggleSpread(); showControls(); });
   btnCoverSep.addEventListener('click', () => { toggleCoverSep(); showControls(); });
+  reader.querySelectorAll('[data-reader-fit]').forEach(button => {
+    button.addEventListener('click', () => { closeMobileActions(true); showControls(); });
+  });
 
   // --- Keyboard ---
 
@@ -411,6 +442,7 @@ import {
 
   updatePage(initialPage);
   window.addEventListener('pagehide', () => {
+    sizing?.destroy();
     interactions?.destroy();
     mobileReaderQuery.removeEventListener('change', syncMobileActionsLayout);
   }, { once: true });

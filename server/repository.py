@@ -171,7 +171,7 @@ class Repository:
     def delete_comics_under_path(self, base_path: Path) -> List[str]:
         """Delete all comics under absolute base_path. Returns deleted comic UUIDs."""
         rel_base_str = to_relative(base_path, self.library_root).rstrip("/")
-        statement = select(Comic).where(col(Comic.path).like(f"{rel_base_str}/%"))
+        statement = select(Comic).where(col(Comic.path).startswith(f"{rel_base_str}/", autoescape=True))
         comics = self.session.exec(statement).all()
         uuids = [c.uuid for c in comics]
 
@@ -186,7 +186,7 @@ class Repository:
         rel_path_str = to_relative(path, self.library_root).rstrip("/")
         
         # Delete child folders
-        statement_folders = select(Folder).where(col(Folder.path).like(f"{rel_path_str}/%"))
+        statement_folders = select(Folder).where(col(Folder.path).startswith(f"{rel_path_str}/", autoescape=True))
         folders = self.session.exec(statement_folders).all()
         for f in folders:
             self.session.delete(f)
@@ -230,7 +230,7 @@ class Repository:
             
         # 2. Update children
         # Fetch all children
-        statement = select(Folder).where(col(Folder.path).like(f"{old_rel_str}/%"))
+        statement = select(Folder).where(col(Folder.path).startswith(f"{old_rel_str}/", autoescape=True))
         children = self.session.exec(statement).all()
         
         for child in children:
@@ -251,7 +251,7 @@ class Repository:
         old_rel_str = to_relative(old_base, self.library_root).rstrip("/")
         new_rel_str = to_relative(new_base, self.library_root).rstrip("/")
         
-        statement = select(Comic).where(col(Comic.path).like(f"{old_rel_str}/%"))
+        statement = select(Comic).where(col(Comic.path).startswith(f"{old_rel_str}/", autoescape=True))
         comics = self.session.exec(statement).all()
         
         for comic in comics:

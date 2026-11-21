@@ -3,15 +3,24 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
+from server.config import get_config
 from server.database import db_connection
+from server.path_utils import to_absolute
 from .. import repo
 from .. import services
 from .. import series
 
 router = APIRouter(tags=["reader"])
+
+_DOWNLOAD_MEDIA_TYPES = {
+    "cbz": "application/x-cbz",
+    "cbr": "application/x-cbr",
+    "cb7": "application/x-7z-compressed",
+    "pdf": "application/pdf",
+}
 
 
 # --- Pydantic models ---
@@ -98,6 +107,31 @@ def api_comic_page(comic_uuid: str, page_num: int):
     )
 
 
+@router.get("/api/comic/{comic_uuid}/download")
+def api_comic_download(comic_uuid: str):
+    """Original comic file as an attachment (covered by reader auth)."""
+    with db_connection() as conn:
+        row = conn.execute(
+            "SELECT path, format FROM comics WHERE uuid = ?",
+            (comic_uuid,),
+        ).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Comic not found")
+
+    path = to_absolute(row["path"], get_config().library_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="File missing on disk")
+
+    fmt = (row["format"] or path.suffix.lstrip(".")).lower()
+    suffix = f".{fmt}"
+    download_name = path.name if path.suffix.lower() == suffix else f"{path.stem}{suffix}"
+    return FileResponse(
+        path,
+        media_type=_DOWNLOAD_MEDIA_TYPES.get(fmt, "application/octet-stream"),
+        filename=download_name,
+    )
+
+
 # --- Metadata ---
 
 
@@ -153,7 +187,7 @@ def api_tags_list():
         return {"tags": repo.get_all_tags(conn)}
 
 
-@router.delete("/api/tags/{tag_name}")
+@router.delete("/api/tags/{tag_name:path}")
 def api_tag_delete(tag_name: str):
     """Delete a tag globally (removes it from all comics)."""
     with db_connection() as conn:

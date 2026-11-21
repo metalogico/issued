@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
@@ -31,6 +32,18 @@ def url_path(request: Request, route_name: str, **path_params) -> str:
 
 
 templates.env.globals["url_path"] = url_path
+
+
+def path_segment(value: object) -> str:
+    """Quote a value as a single URL path segment, ``/``, ``#`` and ``?`` included.
+
+    ``url_for`` inserts path parameters as is: a ``/`` trips Starlette's
+    default convertor, and ``#`` or ``?`` cut the link short.
+    """
+    return quote(str(value), safe="")
+
+
+templates.env.filters["path_segment"] = path_segment
 
 
 def _library_title() -> str:

@@ -5,11 +5,14 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_layout_preferences_are_persisted_and_validated():
-    script = (PROJECT_ROOT / "reader" / "static" / "js" / "layout.js").read_text()
+    script = (PROJECT_ROOT / "reader" / "static" / "js" / "layout.js").read_text(encoding="utf-8")
 
     assert "issued-layout-width" in script
     assert "issued-thumbnail-size" in script
     assert "issued-borderless-collage" in script
+    assert "issued-hide-file-types" in script
+    base = (PROJECT_ROOT / "reader" / "templates" / "base.html").read_text(encoding="utf-8")
+    assert "issued-hide-file-types" in base
     assert "['fixed', 'full']" in script
     assert "['tiny', 'extra-small', 'small', 'medium', 'large', 'extra-large', 'huge']" in script
     assert "Extra small" in script
@@ -20,7 +23,7 @@ def test_layout_preferences_are_persisted_and_validated():
 
 
 def test_layout_styles_support_full_width_and_resizable_cover_grids():
-    styles = (PROJECT_ROOT / "reader" / "static" / "css" / "style.css").read_text()
+    styles = (PROJECT_ROOT / "reader" / "static" / "css" / "style.css").read_text(encoding="utf-8")
 
     assert 'html[data-layout-width="full"] .layout-container' in styles
     assert 'html[data-thumbnail-size="small"] .cover-grid' in styles
@@ -32,12 +35,26 @@ def test_layout_styles_support_full_width_and_resizable_cover_grids():
     assert 'html[data-borderless="true"] .cover-grid' in styles
     assert 'html[data-borderless="true"] .comic-card-details' in styles
     assert 'html[data-borderless="true"] .folder-card-details' in styles
+    assert 'html[data-hide-file-types="true"] .comic-filename-extension' in styles
     assert "--cover-min-width" in styles
 
 
 def test_library_grids_opt_in_to_cover_sizing():
-    folder_grid = (PROJECT_ROOT / "reader" / "templates" / "partials" / "folder-grid.html").read_text()
-    comics_section = (PROJECT_ROOT / "reader" / "templates" / "partials" / "comics-section.html").read_text()
+    folder_grid = (PROJECT_ROOT / "reader" / "templates" / "partials" / "folder-grid.html").read_text(encoding="utf-8")
+    comics_section = (PROJECT_ROOT / "reader" / "templates" / "partials" / "comics-section.html").read_text(encoding="utf-8")
 
     assert "cover-grid" in folder_grid
     assert comics_section.count("cover-grid") == 2
+
+
+def test_sorting_is_opt_out_per_view():
+    script = (PROJECT_ROOT / "reader" / "static" / "js" / "layout.js").read_text(encoding="utf-8")
+    comics_section = (PROJECT_ROOT / "reader" / "templates" / "partials" / "comics-section.html").read_text(encoding="utf-8")
+    browser = (PROJECT_ROOT / "reader" / "templates" / "browser.html").read_text(encoding="utf-8")
+    browse_routes = (PROJECT_ROOT / "reader" / "routes" / "browse.py").read_text(encoding="utf-8")
+
+    assert "section.dataset.sortable !== 'false'" in script
+    assert "data-sortable=" in comics_section
+    assert "sortable|default(true)" in comics_section
+    assert "sortable|default(true)" in browser
+    assert '"sortable": False' in browse_routes

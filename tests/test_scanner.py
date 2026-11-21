@@ -1,4 +1,5 @@
 import io
+import shutil
 import sqlite3
 import zipfile
 from pathlib import Path
@@ -313,3 +314,99 @@ def test_serve_waits_before_scan_and_http(tmp_path, monkeypatch):
 
 
 
+
+
+def _scan_nested_library(tmp_path, monkeypatch):
+    lib = tmp_path / "lib"
+    (lib / "Marvel" / "XMen").mkdir(parents=True)
+    _create_minimal_cbz(lib / "Marvel" / "top.cbz")
+    _create_minimal_cbz(lib / "Marvel" / "XMen" / "issue01.cbz")
+    db_file = _patch_db(tmp_path, monkeypatch)
+    config = _make_config(lib)
+    scanner.scan_library(config, path=None, force=True)
+    return lib, db_file, config
+
+
+def _stored_paths(db_file):
+    conn = sqlite3.connect(db_file)
+    try:
+        comics = sorted(row[0] for row in conn.execute("SELECT path FROM comics"))
+        folders = sorted(row[0] for row in conn.execute("SELECT path FROM folders"))
+        return comics, folders
+    finally:
+        conn.close()
+
+
+def test_deleting_a_folder_removes_its_nested_comics_and_subfolders(tmp_path, monkeypatch):
+    lib, db_file, config = _scan_nested_library(tmp_path, monkeypatch)
+
+    shutil.rmtree(lib / "Marvel")
+    scanner.delete_path(lib / "Marvel", config)
+
+    assert _stored_paths(db_file) == ([], ["."])
+
+
+def test_moving_a_folder_updates_its_nested_comics_and_subfolders(tmp_path, monkeypatch):
+    lib, db_file, config = _scan_nested_library(tmp_path, monkeypatch)
+
+    shutil.move(lib / "Marvel", lib / "MarvelComics")
+    scanner.move_path(lib / "Marvel", lib / "MarvelComics", config)
+
+    assert _stored_paths(db_file) == (
+        ["MarvelComics/XMen/issue01.cbz", "MarvelComics/top.cbz"],
+        [".", "MarvelComics", "MarvelComics/XMen"],
+    )
+
+
+def _scan_like_wildcard_library(tmp_path, monkeypatch):
+    # "_" is a single-character LIKE wildcard: "Series_1/%" also matches "SeriesX1/...".
+    lib = tmp_path / "lib"
+    for series in ("Series_1", "SeriesX1"):
+        (lib / series / "Vol1").mkdir(parents=True)
+        _create_minimal_cbz(lib / series / "Vol1" / "issue01.cbz")
+    db_file = _patch_db(tmp_path, monkeypatch)
+    config = _make_config(lib)
+    scanner.scan_library(config, path=None, force=True)
+    return lib, db_file, config
+
+
+def test_deleting_a_folder_keeps_a_sibling_its_name_matches_as_a_like_pattern(tmp_path, monkeypatch):
+    lib, db_file, config = _scan_like_wildcard_library(tmp_path, monkeypatch)
+
+    shutil.rmtree(lib / "Series_1")
+    scanner.delete_path(lib / "Series_1", config)
+
+    assert _stored_paths(db_file) == (
+        ["SeriesX1/Vol1/issue01.cbz"],
+        [".", "SeriesX1", "SeriesX1/Vol1"],
+    )
+
+
+def test_moving_a_folder_keeps_a_sibling_its_name_matches_as_a_like_pattern(tmp_path, monkeypatch):
+    lib, db_file, config = _scan_like_wildcard_library(tmp_path, monkeypatch)
+
+    shutil.move(lib / "Series_1", lib / "Renamed")
+    scanner.move_path(lib / "Series_1", lib / "Renamed", config)
+
+    assert _stored_paths(db_file) == (
+        ["Renamed/Vol1/issue01.cbz", "SeriesX1/Vol1/issue01.cbz"],
+        [".", "Renamed", "Renamed/Vol1", "SeriesX1", "SeriesX1/Vol1"],
+    )
+
+
+def test_scan_command_prepares_the_database_before_scanning(tmp_path, monkeypatch):
+    order = []
+    monkeypatch.setattr("main._prepare_database", lambda: order.append("prepare"))
+    monkeypatch.setattr(
+        "main.scan_library",
+        lambda cfg, **kwargs: order.append("scan")
+        or {"added": 0, "updated": 0, "deleted": 0, "skipped": 0},
+    )
+    monkeypatch.setattr("main.setup_logging", lambda: None)
+    monkeypatch.setattr("main._ensure_config", lambda: _make_config(tmp_path / "lib"))
+    monkeypatch.setattr("main.typer.echo", lambda *a, **k: None)
+
+    from main import scan
+
+    scan(force=False, path=None, prune=False)
+    assert order == ["prepare", "scan"]

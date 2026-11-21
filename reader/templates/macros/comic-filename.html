@@ -1,0 +1,8 @@
+{% macro comic_filename_text(filename) -%}
+{%- set stem, dot, suffix = filename.rpartition('.') -%}
+{%- if dot and stem -%}{{ stem }}<span class="comic-filename-extension">{{ dot }}{{ suffix }}</span>{%- else -%}{{ filename }}{%- endif -%}
+{%- endmacro %}
+
+{% macro comic_filename(filename, title_class='line-clamp-2 block text-center text-sm font-medium text-gray-800') -%}
+<span class="{{ title_class }}">{{ comic_filename_text(filename) }}</span>
+{%- endmacro %}
